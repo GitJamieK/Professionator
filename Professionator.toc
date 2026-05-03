@@ -1,0 +1,21 @@
+## Interface: 11508, 20505, 50503, 38000
+## Title: Professionator
+## Notes: Profession planning tools for WoW Classic.
+## Author: Jemi
+## Version: 0.1.0
+## SavedVariables: ProfessionatorDB
+## IconTexture: Interface\AddOns\Professionator\img\icon\professionatoricon.tga
+## X-Category: Professions
+## X-Flavor: Classic
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+
+core\prCore.lua
+ui\prUI.lua
+ui\prWindow.lua
+ui\prMinimap.lua
+core\prSlashCommands.lua
+core\prEvents.lua
