@@ -5,7 +5,10 @@ ns.UI = UI
 
 function UI:Initialize()
 	if ns.Window then
-		ns.Window:Create()
+		local window = ns.Window:Create()
+		if ns.ProfessionMenu then
+			ns.ProfessionMenu:Attach(window)
+		end
 	end
 end
 

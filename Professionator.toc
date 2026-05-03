@@ -14,8 +14,10 @@ Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 core\prCore.lua
+data\professions\prProfessionData.lua
 ui\prUI.lua
 ui\prWindow.lua
+ui\prProfessionMenu.lua
 ui\prMinimap.lua
 core\prSlashCommands.lua
 core\prEvents.lua
