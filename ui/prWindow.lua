@@ -4,10 +4,10 @@ local Window = {}
 ns.Window = Window
 
 local FRAME_NAME = "ProfessionatorFrame"
-local DEFAULT_WIDTH = 620
-local DEFAULT_HEIGHT = 500
+local DEFAULT_WIDTH = 500
+local DEFAULT_HEIGHT = 175
+local RESIZE_DURATION = 0.24
 local BORDER_COLOR = { 0.62, 0.62, 0.62, 1 }
-local BORDER_COLOR_DIM = { 0.42, 0.42, 0.42, 1 }
 
 local FRAME_BACKDROP = {
 	bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
@@ -72,6 +72,27 @@ local function stopMoving(widget)
 	Window:SavePosition()
 end
 
+local function easeOutCubic(progress)
+	local inverse = 1 - progress
+	return 1 - (inverse * inverse * inverse)
+end
+
+local function anchorTopLeft(frame)
+	if not frame or not UIParent then
+		return
+	end
+
+	local left = frame:GetLeft()
+	local top = frame:GetTop()
+	local parentTop = UIParent:GetTop()
+	if not left or not top or not parentTop then
+		return
+	end
+
+	frame:ClearAllPoints()
+	frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", left, top - parentTop)
+end
+
 function Window:Create()
 	if self.frame then
 		return self.frame
@@ -117,10 +138,9 @@ function Window:Create()
 	closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -4, -4)
 	closeButton:SetFrameLevel(frame:GetFrameLevel() + 10)
 
-	local content = CreateFrame("Frame", "$parentContent", frame, ns:GetBackdropTemplate())
-	content:SetPoint("TOPLEFT", frame, "TOPLEFT", 22, -44)
-	content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -22, 22)
-	applyBackdrop(content, PANEL_BACKDROP, { 0, 0, 0, 0.62 }, BORDER_COLOR_DIM)
+	local content = CreateFrame("Frame", "$parentContent", frame)
+	content:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -42)
+	content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -16, 16)
 
 	frame.content = content
 	frame.closeButton = closeButton
@@ -162,6 +182,47 @@ function Window:SavePosition()
 	db.relativePoint = relativePoint or "CENTER"
 	db.x = x or 0
 	db.y = y or 0
+end
+
+function Window:ResizeTo(width, height, immediate)
+	local frame = self:Create()
+	if not frame or not width or not height then
+		return
+	end
+
+	local currentWidth = frame:GetWidth() or width
+	local currentHeight = frame:GetHeight() or height
+	if math.abs(currentWidth - width) < 1 and math.abs(currentHeight - height) < 1 then
+		frame:SetSize(width, height)
+		return
+	end
+
+	anchorTopLeft(frame)
+
+	if immediate or not frame:IsShown() then
+		frame:SetSize(width, height)
+		return
+	end
+
+	frame.resizeElapsed = 0
+	frame.resizeStartWidth = currentWidth
+	frame.resizeStartHeight = currentHeight
+	frame.resizeTargetWidth = width
+	frame.resizeTargetHeight = height
+	frame:SetScript("OnUpdate", function(activeFrame, elapsed)
+		activeFrame.resizeElapsed = activeFrame.resizeElapsed + elapsed
+		local progress = math.min(activeFrame.resizeElapsed / RESIZE_DURATION, 1)
+		local eased = easeOutCubic(progress)
+		local nextWidth = activeFrame.resizeStartWidth + ((activeFrame.resizeTargetWidth - activeFrame.resizeStartWidth) * eased)
+		local nextHeight = activeFrame.resizeStartHeight + ((activeFrame.resizeTargetHeight - activeFrame.resizeStartHeight) * eased)
+
+		activeFrame:SetSize(nextWidth, nextHeight)
+
+		if progress >= 1 then
+			activeFrame:SetScript("OnUpdate", nil)
+			activeFrame:SetSize(activeFrame.resizeTargetWidth, activeFrame.resizeTargetHeight)
+		end
+	end)
 end
 
 function Window:Show()
