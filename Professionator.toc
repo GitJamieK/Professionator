@@ -1,4 +1,4 @@
-## Interface: 11508, 20505, 50503, 38000
+## Interface: 11508
 ## Title: Professionator
 ## Notes: Profession planning tools for WoW Classic.
 ## Author: Jemi
@@ -17,7 +17,9 @@ core\prCore.lua
 data\professions\prProfessionData.lua
 ui\prUI.lua
 ui\prWindow.lua
-ui\prProfessionMenu.lua
+ui\professionMenu\prProfessionMenuShared.lua
+ui\professionMenu\prProfessionMenuCore.lua
+ui\professionMenu\categories\trainers\prProfessionMenuTrainers.lua
 ui\prMinimap.lua
 core\prSlashCommands.lua
 core\prEvents.lua
