@@ -17,36 +17,6 @@ ns.ProfessionData = {
 			label = "Recipes",
 			icon = "Interface\\Icons\\INV_Scroll_03",
 		},
-		{
-			id = "leveling",
-			label = "Optimized Leveling",
-			shortLabel = "Leveling",
-			icon = "Interface\\Icons\\INV_Misc_Map_01",
-		},
-		{
-			id = "farming",
-			label = "Material Farming",
-			shortLabel = "Farming",
-			icon = "Interface\\Icons\\INV_Misc_Herb_03",
-		},
-		{
-			id = "shopping",
-			label = "Shopping List",
-			shortLabel = "Shopping",
-			icon = "Interface\\Icons\\INV_Misc_Bag_10",
-		},
-		{
-			id = "specializations",
-			label = "Specializations",
-			shortLabel = "Specs",
-			icon = "Interface\\Icons\\INV_Misc_Gear_01",
-		},
-		{
-			id = "saved",
-			label = "Saved Plans",
-			shortLabel = "Saved",
-			icon = "Interface\\Icons\\INV_Letter_15",
-		},
 	},
 	professions = {
 		{

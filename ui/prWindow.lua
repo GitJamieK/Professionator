@@ -26,14 +26,14 @@ local FRAME_BACKDROP = {
 local PANEL_BACKDROP = {
 	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-	tile = true,
+	tile = false,
 	tileSize = 16,
-	edgeSize = 16,
+	edgeSize = 10,
 	insets = {
-		left = 4,
-		right = 4,
-		top = 4,
-		bottom = 4,
+		left = 3,
+		right = 3,
+		top = 3,
+		bottom = 3,
 	},
 }
 
@@ -63,6 +63,7 @@ end
 
 local function startMoving(widget)
 	local owner = widget.ownerFrame or widget
+	Window:StopResizeAnimation()
 	owner:StartMoving()
 end
 
@@ -106,30 +107,31 @@ function Window:Create()
 	frame:SetMovable(true)
 	frame:SetClampedToScreen(true)
 	frame:EnableMouse(true)
-	frame:RegisterForDrag("LeftButton")
 	frame.ownerFrame = frame
-	frame:SetScript("OnDragStart", startMoving)
-	frame:SetScript("OnDragStop", stopMoving)
 
 	applyBackdrop(frame, FRAME_BACKDROP, { 0.02, 0.02, 0.02, 0.96 }, BORDER_COLOR)
 
-	local titleBar = CreateFrame("Frame", "$parentTitleBar", frame, ns:GetBackdropTemplate())
-	titleBar:SetSize(188, 28)
-	titleBar:SetPoint("TOP", frame, "TOP", 0, -8)
+	local titleBar = CreateFrame("Frame", "$parentTitleBar", frame)
+	titleBar:SetSize(230, 60)
+	titleBar:SetPoint("CENTER", frame, "TOP", 0, -15)
+	titleBar:SetFrameLevel(frame:GetFrameLevel() + 8)
 	titleBar:EnableMouse(true)
 	titleBar:RegisterForDrag("LeftButton")
 	titleBar.ownerFrame = frame
 	titleBar:SetScript("OnDragStart", startMoving)
 	titleBar:SetScript("OnDragStop", stopMoving)
-	applyBackdrop(titleBar, PANEL_BACKDROP, { 0.015, 0.015, 0.015, 0.98 }, BORDER_COLOR)
+
+	local titleHeader = titleBar:CreateTexture(nil, "BACKGROUND")
+	titleHeader:SetAllPoints(titleBar)
+	titleHeader:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
 
 	local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-	titleText:SetPoint("CENTER", titleBar, "CENTER", 10, 0)
+	titleText:SetPoint("CENTER", titleBar, "CENTER", 11, 10)
 	titleText:SetText(ns.title)
 	titleText:SetTextColor(1, 0.82, 0, 1)
 
 	local titleIcon = titleBar:CreateTexture(nil, "ARTWORK")
-	titleIcon:SetSize(16, 16)
+	titleIcon:SetSize(15, 15)
 	titleIcon:SetPoint("RIGHT", titleText, "LEFT", -4, 0)
 	titleIcon:SetTexture(ns.assets.icon)
 
@@ -184,6 +186,25 @@ function Window:SavePosition()
 	db.y = y or 0
 end
 
+function Window:StopResizeAnimation(finishAtTarget)
+	local frame = self.frame
+	if not frame or not frame.isResizing then
+		return
+	end
+
+	frame:SetScript("OnUpdate", nil)
+	if finishAtTarget and frame.resizeTargetWidth and frame.resizeTargetHeight then
+		frame:SetSize(frame.resizeTargetWidth, frame.resizeTargetHeight)
+	end
+
+	frame.isResizing = false
+	frame.resizeElapsed = nil
+	frame.resizeStartWidth = nil
+	frame.resizeStartHeight = nil
+	frame.resizeTargetWidth = nil
+	frame.resizeTargetHeight = nil
+end
+
 function Window:ResizeTo(width, height, immediate)
 	local frame = self:Create()
 	if not frame or not width or not height then
@@ -193,6 +214,7 @@ function Window:ResizeTo(width, height, immediate)
 	local currentWidth = frame:GetWidth() or width
 	local currentHeight = frame:GetHeight() or height
 	if math.abs(currentWidth - width) < 1 and math.abs(currentHeight - height) < 1 then
+		self:StopResizeAnimation(true)
 		frame:SetSize(width, height)
 		return
 	end
@@ -200,15 +222,18 @@ function Window:ResizeTo(width, height, immediate)
 	anchorTopLeft(frame)
 
 	if immediate or not frame:IsShown() then
+		self:StopResizeAnimation()
 		frame:SetSize(width, height)
 		return
 	end
 
+	self:StopResizeAnimation()
 	frame.resizeElapsed = 0
 	frame.resizeStartWidth = currentWidth
 	frame.resizeStartHeight = currentHeight
 	frame.resizeTargetWidth = width
 	frame.resizeTargetHeight = height
+	frame.isResizing = true
 	frame:SetScript("OnUpdate", function(activeFrame, elapsed)
 		activeFrame.resizeElapsed = activeFrame.resizeElapsed + elapsed
 		local progress = math.min(activeFrame.resizeElapsed / RESIZE_DURATION, 1)
@@ -221,6 +246,12 @@ function Window:ResizeTo(width, height, immediate)
 		if progress >= 1 then
 			activeFrame:SetScript("OnUpdate", nil)
 			activeFrame:SetSize(activeFrame.resizeTargetWidth, activeFrame.resizeTargetHeight)
+			activeFrame.isResizing = false
+			activeFrame.resizeElapsed = nil
+			activeFrame.resizeStartWidth = nil
+			activeFrame.resizeStartHeight = nil
+			activeFrame.resizeTargetWidth = nil
+			activeFrame.resizeTargetHeight = nil
 		end
 	end)
 end

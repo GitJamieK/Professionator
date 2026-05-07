@@ -33,7 +33,7 @@ local WINDOW_SIZES = {
 	},
 	detail = {
 		width = 570,
-		height = 465,
+		height = 350,
 	},
 }
 
@@ -96,6 +96,15 @@ local function getSpellTexture(spellID, fallback)
 	end
 
 	return texture or fallback
+end
+
+local function getActionGridHeight(sectionCount)
+	local rows = math.ceil((sectionCount or 0) / 2)
+	if rows <= 0 then
+		return ACTION_HEIGHT
+	end
+
+	return (rows * ACTION_HEIGHT) + ((rows - 1) * ACTION_GAP)
 end
 
 local function createBody(button)
@@ -404,7 +413,7 @@ function ProfessionMenu:CreateProfessionDetailView()
 	group:SetTextColor(0.74, 0.70, 0.60, 1)
 
 	local actionGrid = CreateFrame("Frame", nil, view)
-	actionGrid:SetSize(492, 238)
+	actionGrid:SetSize(492, getActionGridHeight(#self.sections))
 	actionGrid:SetPoint("TOPLEFT", view, "TOPLEFT", SCREEN_PADDING_X, -162)
 
 	for index, section in ipairs(self.sections) do
