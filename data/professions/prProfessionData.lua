@@ -208,6 +208,7 @@ ns.ProfessionData = {
 					zone = "Stormwind City",
 					coords = "42.8, 26.6",
 					url = "https://www.wowhead.com/classic/npc=2327/shaina-fuller",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\shaina-fuller.png",
 				},
 				{
 					id = "dannelor",
@@ -218,6 +219,7 @@ ns.ProfessionData = {
 					zone = "Darnassus",
 					coords = "51.6, 12.6",
 					url = "https://www.wowhead.com/classic/npc=4211/dannelor",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\dannelor.png",
 				},
 				{
 					id = "nissa-firestone",
@@ -228,6 +230,7 @@ ns.ProfessionData = {
 					zone = "Ironforge",
 					coords = "54.8, 58.6",
 					url = "https://www.wowhead.com/classic/npc=5150/nissa-firestone",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\nissa-firestone.png",
 				},
 				{
 					id = "michelle-belle",
@@ -238,6 +241,7 @@ ns.ProfessionData = {
 					zone = "Elwynn Forest",
 					coords = "43.4, 65.6",
 					url = "https://www.wowhead.com/classic/npc=2329/michelle-belle",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\michelle-belle.png",
 				},
 				{
 					id = "doctor-gustaf-vanhowzen",
@@ -248,6 +252,7 @@ ns.ProfessionData = {
 					zone = "Dustwallow Marsh",
 					coords = "67.0, 48.0",
 					url = "https://www.wowhead.com/classic/npc=12939/doctor-gustaf-vanhowzen",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\doctor-gustaf-vanhowzen.png",
 				},
 				{
 					id = "byancie",
@@ -258,6 +263,7 @@ ns.ProfessionData = {
 					zone = "Teldrassil",
 					coords = "55.2, 56.8",
 					url = "https://www.wowhead.com/classic/npc=6094/byancie",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\byancie.png",
 				},
 				{
 					id = "fremal-doohickey",
@@ -268,6 +274,7 @@ ns.ProfessionData = {
 					zone = "Wetlands",
 					coords = "10.8, 61.2",
 					url = "https://www.wowhead.com/classic/npc=3181/fremal-doohickey",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\fremal-doohickey.png",
 				},
 				{
 					id = "thamner-pol",
@@ -278,6 +285,7 @@ ns.ProfessionData = {
 					zone = "Dun Morogh",
 					coords = "47.2, 52.6",
 					url = "https://www.wowhead.com/classic/npc=2326/thamner-pol",
+					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\thamner-pol.png",
 				},
 			},
 		},
