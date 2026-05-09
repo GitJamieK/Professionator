@@ -1,5 +1,11 @@
 local _, ns = ...
 
+local SCREENSHOT_ROOT = "Interface\\AddOns\\Professionator\\img\\screenshots"
+
+local function trainerAssetPath(professionID, factionID, trainerID, imageType)
+	return SCREENSHOT_ROOT .. "\\trainers\\" .. professionID .. "\\" .. factionID .. "\\" .. trainerID .. "\\" .. imageType .. ".png"
+end
+
 ns.ProfessionData = {
 	menuSections = {
 		{
@@ -125,6 +131,8 @@ ns.ProfessionData = {
 		},
 	},
 	trainerData = {
+		-- Trainer screenshots use:
+		-- img/screenshots/trainers/<profession-id>/<faction-id>/<trainer-id>/{target,model,map}.png
 		["first-aid"] = {
 			horde = {
 				{
@@ -208,7 +216,9 @@ ns.ProfessionData = {
 					zone = "Stormwind City",
 					coords = "42.8, 26.6",
 					url = "https://www.wowhead.com/classic/npc=2327/shaina-fuller",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\shaina-fuller.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "map"),
 				},
 				{
 					id = "dannelor",
@@ -219,7 +229,9 @@ ns.ProfessionData = {
 					zone = "Darnassus",
 					coords = "51.6, 12.6",
 					url = "https://www.wowhead.com/classic/npc=4211/dannelor",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\dannelor.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "dannelor", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "dannelor", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "dannelor", "map"),
 				},
 				{
 					id = "nissa-firestone",
@@ -230,7 +242,9 @@ ns.ProfessionData = {
 					zone = "Ironforge",
 					coords = "54.8, 58.6",
 					url = "https://www.wowhead.com/classic/npc=5150/nissa-firestone",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\nissa-firestone.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "map"),
 				},
 				{
 					id = "michelle-belle",
@@ -241,7 +255,9 @@ ns.ProfessionData = {
 					zone = "Elwynn Forest",
 					coords = "43.4, 65.6",
 					url = "https://www.wowhead.com/classic/npc=2329/michelle-belle",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\michelle-belle.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "map"),
 				},
 				{
 					id = "doctor-gustaf-vanhowzen",
@@ -252,7 +268,9 @@ ns.ProfessionData = {
 					zone = "Dustwallow Marsh",
 					coords = "67.0, 48.0",
 					url = "https://www.wowhead.com/classic/npc=12939/doctor-gustaf-vanhowzen",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\doctor-gustaf-vanhowzen.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "map"),
 				},
 				{
 					id = "byancie",
@@ -263,7 +281,9 @@ ns.ProfessionData = {
 					zone = "Teldrassil",
 					coords = "55.2, 56.8",
 					url = "https://www.wowhead.com/classic/npc=6094/byancie",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\byancie.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "byancie", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "byancie", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "byancie", "map"),
 				},
 				{
 					id = "fremal-doohickey",
@@ -274,7 +294,9 @@ ns.ProfessionData = {
 					zone = "Wetlands",
 					coords = "10.8, 61.2",
 					url = "https://www.wowhead.com/classic/npc=3181/fremal-doohickey",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\fremal-doohickey.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "map"),
 				},
 				{
 					id = "thamner-pol",
@@ -285,7 +307,9 @@ ns.ProfessionData = {
 					zone = "Dun Morogh",
 					coords = "47.2, 52.6",
 					url = "https://www.wowhead.com/classic/npc=2326/thamner-pol",
-					targetImage = "Interface\\AddOns\\Professionator\\img\\screenshots\\trainers\\first-aid\\alliance\\thamner-pol.png",
+					targetImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "target"),
+					modelImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "model"),
+					mapImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "map"),
 				},
 			},
 		},
