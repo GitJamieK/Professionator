@@ -144,6 +144,9 @@ ns.ProfessionData = {
 					zone = "Orgrimmar",
 					coords = "34.0, 84.4",
 					url = "https://www.wowhead.com/classic/npc=3373/arnok",
+					targetImage = trainerAssetPath("first-aid", "horde", "arnok", "target"),
+					modelImage = trainerAssetPath("first-aid", "horde", "arnok", "model"),
+					mapImage = trainerAssetPath("first-aid", "horde", "arnok", "map"),
 				},
 				{
 					id = "pand-stonebinder",
@@ -154,6 +157,9 @@ ns.ProfessionData = {
 					zone = "Thunder Bluff",
 					coords = "29.6, 21.4",
 					url = "https://www.wowhead.com/classic/npc=2798/pand-stonebinder",
+					targetImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "target"),
+					modelImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "model"),
+					mapImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "map"),
 				},
 				{
 					id = "mary-edras",
@@ -164,6 +170,9 @@ ns.ProfessionData = {
 					zone = "Undercity",
 					coords = "73.6, 55.6",
 					url = "https://www.wowhead.com/classic/npc=4591/mary-edras",
+					targetImage = trainerAssetPath("first-aid", "horde", "mary-edras", "target"),
+					modelImage = trainerAssetPath("first-aid", "horde", "mary-edras", "model"),
+					mapImage = trainerAssetPath("first-aid", "horde", "mary-edras", "map"),
 				},
 				{
 					id = "doctor-gregory-victor",
@@ -174,6 +183,9 @@ ns.ProfessionData = {
 					zone = "Arathi Highlands",
 					coords = "73.0, 36.0",
 					url = "https://www.wowhead.com/classic/npc=12920/doctor-gregory-victor",
+					targetImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "target"),
+					modelImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "model"),
+					mapImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "map"),
 				},
 				{
 					id = "nurse-neela",
@@ -184,6 +196,9 @@ ns.ProfessionData = {
 					zone = "Tirisfal Glades",
 					coords = "61.8, 52.8",
 					url = "https://www.wowhead.com/classic/npc=5759/nurse-neela",
+					targetImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "target"),
+					modelImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "model"),
+					mapImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "map"),
 				},
 				{
 					id = "rawrk",
@@ -194,6 +209,9 @@ ns.ProfessionData = {
 					zone = "Durotar",
 					coords = "54.0, 42.0",
 					url = "https://www.wowhead.com/classic/npc=5943/rawrk",
+					targetImage = trainerAssetPath("first-aid", "horde", "rawrk", "target"),
+					modelImage = trainerAssetPath("first-aid", "horde", "rawrk", "model"),
+					mapImage = trainerAssetPath("first-aid", "horde", "rawrk", "map"),
 				},
 				{
 					id = "vira-younghoof",
@@ -204,6 +222,9 @@ ns.ProfessionData = {
 					zone = "Mulgore",
 					coords = "46.8, 60.8",
 					url = "https://www.wowhead.com/classic/npc=5939/vira-younghoof",
+					targetImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "target"),
+					modelImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "model"),
+					mapImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "map"),
 				},
 			},
 			alliance = {
