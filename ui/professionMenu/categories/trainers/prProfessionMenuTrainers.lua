@@ -12,6 +12,19 @@ local TRAINER_ROW_GAP = 8
 local TRAINER_IMAGE_WIDTH = 72
 local TRAINER_IMAGE_HEIGHT = 66
 local TRAINER_LIST_HEIGHT = 300
+local TRAINER_DETAIL_PANEL_WIDTH = 492
+local TRAINER_DETAIL_PANEL_HEIGHT = 190
+local TRAINER_DETAIL_MEDIA_PANEL_HEIGHT = 595
+local TRAINER_DETAIL_MODEL_WIDTH = 104
+local TRAINER_DETAIL_MODEL_HEIGHT = 148
+local TRAINER_DETAIL_MAP_WIDTH = 420
+local TRAINER_DETAIL_MAP_HEIGHT = 289
+local TRAINER_DETAIL_MODEL_PREVIEW_WIDTH = 300
+local TRAINER_DETAIL_MODEL_PREVIEW_HEIGHT = 450
+local TRAINER_DETAIL_MAP_PREVIEW_WIDTH = 760
+local TRAINER_DETAIL_MAP_PREVIEW_HEIGHT = 524
+local TRAINER_DETAIL_PREVIEW_PADDING = 5
+local TRAINER_DETAIL_PREVIEW_DURATION = 0.22
 local TRAINER_SCROLL_GAP = 10
 local TRAINER_SCROLL_TRACK_WIDTH = 8
 local TRAINER_SCROLL_THUMB_MIN_HEIGHT = 36
@@ -39,6 +52,9 @@ local createView = Shared.CreateView
 Shared.RegisterWindowSize("trainers", 560, 270)
 Shared.RegisterWindowSize("trainerList", 560, 500)
 Shared.RegisterWindowSize("trainerDetail", 570, 390)
+Shared.RegisterWindowSize("trainerDetailMedia", 570, 740)
+Shared.RegisterWindowSize("trainerDetailModelPreview", 570, 740)
+Shared.RegisterWindowSize("trainerDetailMapPreview", 860, 760)
 
 local TRAINER_FACTIONS = {
 	{
@@ -85,6 +101,68 @@ local function setTrainerImage(texture, trainer, imageWidth, imageHeight, fallba
 	local iconSize = fallbackSize or math.min(imageWidth, imageHeight)
 	texture:SetSize(iconSize, iconSize)
 	setIcon(texture, (trainer and trainer.icon) or TRAINER_FALLBACK_ICON)
+end
+
+local function getImageSize(imageSize)
+	if not imageSize then
+		return nil, nil
+	end
+
+	return imageSize.width or imageSize[1], imageSize.height or imageSize[2]
+end
+
+local function fitImageSize(imageSize, maxWidth, maxHeight)
+	local sourceWidth, sourceHeight = getImageSize(imageSize)
+	if not sourceWidth or not sourceHeight or sourceWidth <= 0 or sourceHeight <= 0 then
+		return maxWidth, maxHeight
+	end
+
+	local scale = math.min(maxWidth / sourceWidth, maxHeight / sourceHeight)
+	return sourceWidth * scale, sourceHeight * scale
+end
+
+local function setTrainerDetailImage(texture, imagePath, imageSize, maxWidth, maxHeight)
+	if imagePath then
+		local width, height = fitImageSize(imageSize, maxWidth or texture:GetWidth(), maxHeight or texture:GetHeight())
+
+		texture:ClearAllPoints()
+		texture:SetPoint("CENTER", texture:GetParent(), "CENTER", 0, 0)
+		texture:SetSize(width, height)
+		texture:SetTexture(imagePath)
+		texture:SetTexCoord(0, 1, 0, 1)
+		texture:Show()
+		return true
+	end
+
+	texture:SetTexture(nil)
+	texture:Hide()
+	return false
+end
+
+local function getTrainerImagePreviewConfig(imageKind, trainer)
+	if imageKind == "map" then
+		local startWidth, startHeight = fitImageSize(trainer and trainer.mapImageSize, TRAINER_DETAIL_MAP_WIDTH, TRAINER_DETAIL_MAP_HEIGHT)
+		local targetWidth, targetHeight = fitImageSize(trainer and trainer.mapImageSize, TRAINER_DETAIL_MAP_PREVIEW_WIDTH, TRAINER_DETAIL_MAP_PREVIEW_HEIGHT)
+
+		return {
+			windowName = "trainerDetailMapPreview",
+			startWidth = startWidth + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+			startHeight = startHeight + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+			targetWidth = targetWidth + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+			targetHeight = targetHeight + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+		}
+	end
+
+	local startWidth, startHeight = fitImageSize(trainer and trainer.modelImageSize, TRAINER_DETAIL_MODEL_WIDTH, TRAINER_DETAIL_MODEL_HEIGHT)
+	local targetWidth, targetHeight = fitImageSize(trainer and trainer.modelImageSize, TRAINER_DETAIL_MODEL_PREVIEW_WIDTH, TRAINER_DETAIL_MODEL_PREVIEW_HEIGHT)
+
+	return {
+		windowName = "trainerDetailModelPreview",
+		startWidth = startWidth + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+		startHeight = startHeight + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+		targetWidth = targetWidth + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+		targetHeight = targetHeight + (TRAINER_DETAIL_PREVIEW_PADDING * 2),
+	}
 end
 
 local function clamp(value, minimum, maximum)
@@ -304,7 +382,7 @@ function ProfessionMenu:CreateTrainerDetailView()
 	self.trainerDetailHeaderSubtitle = subtitle
 
 	local panel = CreateFrame("Frame", nil, view, ns:GetBackdropTemplate())
-	panel:SetSize(492, 180)
+	panel:SetSize(TRAINER_DETAIL_PANEL_WIDTH, TRAINER_DETAIL_PANEL_HEIGHT)
 	panel:SetPoint("TOPLEFT", view, "TOPLEFT", SCREEN_PADDING_X, -78)
 	applyBackdrop(panel, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, 0.82 }, { 0.22, 0.22, 0.23, 1 })
 
@@ -317,13 +395,13 @@ function ProfessionMenu:CreateTrainerDetailView()
 
 	local name = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	name:SetPoint("TOPLEFT", imageFrame, "TOPRIGHT", 16, -2)
-	name:SetWidth(310)
+	name:SetWidth(210)
 	name:SetJustifyH("LEFT")
 	setTextColor(name, GOLD)
 
 	local role = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	role:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -2)
-	role:SetWidth(310)
+	role:SetWidth(210)
 	role:SetJustifyH("LEFT")
 	role:SetTextColor(0.74, 0.70, 0.60, 1)
 
@@ -332,23 +410,113 @@ function ProfessionMenu:CreateTrainerDetailView()
 	locationLabel:SetText("Location")
 	setTextColor(locationLabel, GOLD_SOFT)
 
+	local waypointButton = CreateFrame("Button", nil, panel, ns:GetBackdropTemplate())
+	waypointButton:SetSize(84, 22)
+	waypointButton:RegisterForClicks("LeftButtonUp")
+	applyBackdrop(waypointButton, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, 0.90 }, { 0.30, 0.30, 0.31, 1 })
+	waypointButton:Hide()
+
+	local waypointLabel = waypointButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	waypointLabel:SetPoint("CENTER", waypointButton, "CENTER", 0, 0)
+	waypointLabel:SetText("waypoint")
+	setTextColor(waypointLabel, TEXT_DIM)
+
 	local location = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	location:SetPoint("TOPLEFT", locationLabel, "BOTTOMLEFT", 0, -5)
-	location:SetWidth(448)
+	location:SetWidth(318)
 	location:SetJustifyH("LEFT")
 	setTextColor(location, TEXT)
 
+	local modelFrame = CreateFrame("Frame", nil, panel)
+	modelFrame:SetSize(TRAINER_DETAIL_MODEL_WIDTH, TRAINER_DETAIL_MODEL_HEIGHT)
+	modelFrame:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -18, -14)
+
+	local model = modelFrame:CreateTexture(nil, "OVERLAY")
+	model:SetPoint("CENTER", modelFrame, "CENTER", 0, 0)
+	model:Hide()
+
+	local modelButton = CreateFrame("Button", nil, modelFrame)
+	modelButton:SetAllPoints(modelFrame)
+	modelButton:EnableMouse(true)
+	modelButton:RegisterForClicks("LeftButtonUp")
+	modelButton:Hide()
+	modelButton:SetScript("OnClick", function()
+		if self.selectedTrainer and self.selectedTrainer.modelImage then
+			self:OpenTrainerImagePreview(self.selectedTrainer.modelImage, "model")
+		end
+	end)
+
 	local npcID = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-	npcID:SetPoint("TOPLEFT", location, "BOTTOMLEFT", 0, -8)
-	npcID:SetWidth(448)
-	npcID:SetJustifyH("LEFT")
+	npcID:SetPoint("TOP", modelFrame, "BOTTOM", 0, -8)
+	npcID:SetWidth(140)
+	npcID:SetJustifyH("CENTER")
 	setTextColor(npcID, TEXT_DIM)
 
+	local mapFrame = CreateFrame("Frame", nil, panel)
+	mapFrame:SetSize(TRAINER_DETAIL_MAP_WIDTH, TRAINER_DETAIL_MAP_HEIGHT)
+	mapFrame:SetPoint("TOPLEFT", location, "BOTTOMLEFT", 0, -12)
+	mapFrame:Hide()
+
+	local map = mapFrame:CreateTexture(nil, "OVERLAY")
+	map:SetAllPoints(mapFrame)
+	map:Hide()
+
+	local mapButton = CreateFrame("Button", nil, mapFrame)
+	mapButton:SetAllPoints(mapFrame)
+	mapButton:EnableMouse(true)
+	mapButton:RegisterForClicks("LeftButtonUp")
+	mapButton:Hide()
+	mapButton:SetScript("OnClick", function()
+		if self.selectedTrainer and self.selectedTrainer.mapImage then
+			self:OpenTrainerImagePreview(self.selectedTrainer.mapImage, "map")
+		end
+	end)
+
+	local previewOverlay = CreateFrame("Button", nil, view)
+	previewOverlay:SetAllPoints(view)
+	previewOverlay:SetFrameLevel(view:GetFrameLevel() + 80)
+	previewOverlay:EnableMouse(true)
+	previewOverlay:RegisterForClicks("LeftButtonUp")
+	previewOverlay:Hide()
+
+	local previewDim = previewOverlay:CreateTexture(nil, "BACKGROUND")
+	previewDim:SetAllPoints(previewOverlay)
+	colorTexture(previewDim, 0, 0, 0, 0.74)
+
+	local previewFrame = CreateFrame("Button", nil, previewOverlay, ns:GetBackdropTemplate())
+	previewFrame:EnableMouse(true)
+	previewFrame:RegisterForClicks("LeftButtonUp")
+	previewFrame:SetFrameLevel(previewOverlay:GetFrameLevel() + 2)
+	applyBackdrop(previewFrame, BUTTON_BACKDROP, { 0.010, 0.010, 0.012, 0.96 }, { 0.48, 0.42, 0.30, 1 })
+	previewFrame:SetScript("OnClick", function() end)
+
+	local previewImage = previewFrame:CreateTexture(nil, "OVERLAY")
+	previewImage:SetPoint("TOPLEFT", previewFrame, "TOPLEFT", TRAINER_DETAIL_PREVIEW_PADDING, -TRAINER_DETAIL_PREVIEW_PADDING)
+	previewImage:SetPoint("BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", -TRAINER_DETAIL_PREVIEW_PADDING, TRAINER_DETAIL_PREVIEW_PADDING)
+	previewImage:SetTexCoord(0, 1, 0, 1)
+
+	previewOverlay:SetScript("OnClick", function()
+		self:CloseTrainerImagePreview()
+	end)
+
+	self.trainerDetailPanel = panel
+	self.trainerDetailImageFrame = imageFrame
 	self.trainerDetailImage = image
 	self.trainerDetailName = name
 	self.trainerDetailRole = role
+	self.trainerDetailLocationLabel = locationLabel
 	self.trainerDetailLocation = location
+	self.trainerDetailModel = model
+	self.trainerDetailMap = map
+	self.trainerDetailModelButton = modelButton
+	self.trainerDetailMapButton = mapButton
+	self.trainerDetailMapFrame = mapFrame
+	self.trainerDetailModelFrame = modelFrame
 	self.trainerDetailNpcID = npcID
+	self.trainerDetailWaypointButton = waypointButton
+	self.trainerImagePreviewOverlay = previewOverlay
+	self.trainerImagePreviewFrame = previewFrame
+	self.trainerImagePreviewImage = previewImage
 end
 
 function ProfessionMenu:GoToTrainerMenu()
@@ -369,6 +537,10 @@ end
 function ProfessionMenu:GetTrainerListWindowName()
 	local trainers = self:GetSelectedProfessionTrainers(self.selectedTrainerFactionID)
 	return #trainers > 0 and "trainerList" or "trainers"
+end
+
+function ProfessionMenu:GetTrainerDetailWindowName(trainer)
+	return trainer and (trainer.modelImage or trainer.mapImage) and "trainerDetailMedia" or "trainerDetail"
 end
 
 function ProfessionMenu:RefreshTrainerMenu()
@@ -658,15 +830,98 @@ function ProfessionMenu:GoToTrainerDetail(trainer)
 
 	self.selectedTrainer = trainer
 	self:RefreshTrainerDetail()
-	self:ResizeWindow("trainerDetail")
-	self:TransitionTo(self.views.trainerDetail, 1, "trainerDetail")
+	self:ResizeWindow(self:GetTrainerDetailWindowName(trainer))
+	self:TransitionTo(self.views.trainerDetail, 1, self:GetTrainerDetailWindowName(trainer))
 end
 
 function ProfessionMenu:GoBackToTrainerList()
+	self:CloseTrainerImagePreview(true)
 	self:RefreshTrainerFactions()
 	self:RefreshTrainerList()
 	self:ResizeWindow(self:GetTrainerListWindowName())
 	self:TransitionTo(self.views.trainers, -1, self:GetTrainerListWindowName())
+end
+
+function ProfessionMenu:SetTrainerImagePreviewProgress(config, amount)
+	local frame = self.trainerImagePreviewFrame
+	local overlay = self.trainerImagePreviewOverlay
+	if not frame or not overlay or not config then
+		return
+	end
+
+	local width = config.startWidth + ((config.targetWidth - config.startWidth) * amount)
+	local height = config.startHeight + ((config.targetHeight - config.startHeight) * amount)
+
+	self.trainerImagePreviewProgress = amount
+	overlay:SetAlpha(amount)
+	frame:SetSize(width, height)
+	frame:ClearAllPoints()
+	frame:SetPoint("CENTER", overlay, "CENTER", 0, 0)
+end
+
+function ProfessionMenu:OpenTrainerImagePreview(imagePath, imageKind)
+	if not imagePath or not self.trainerImagePreviewOverlay or not self.trainerImagePreviewFrame or not self.trainerImagePreviewImage then
+		return
+	end
+
+	local config = getTrainerImagePreviewConfig(imageKind, self.selectedTrainer)
+	self.trainerImagePreviewKind = imageKind
+	self.trainerImagePreviewOverlay:SetScript("OnUpdate", nil)
+	self.trainerImagePreviewImage:SetTexture(imagePath)
+	self.trainerImagePreviewImage:SetTexCoord(0, 1, 0, 1)
+	self.trainerImagePreviewOverlay:SetAlpha(0)
+	self.trainerImagePreviewOverlay:Show()
+	self:SetTrainerImagePreviewProgress(config, 0)
+	self:ResizeWindow(config.windowName)
+
+	local elapsedTime = 0
+	self.trainerImagePreviewOverlay:SetScript("OnUpdate", function(overlay, elapsed)
+		elapsedTime = elapsedTime + elapsed
+		local progress = math.min(elapsedTime / TRAINER_DETAIL_PREVIEW_DURATION, 1)
+		self:SetTrainerImagePreviewProgress(config, easeOutCubic(progress))
+
+		if progress >= 1 then
+			overlay:SetScript("OnUpdate", nil)
+			self:SetTrainerImagePreviewProgress(config, 1)
+		end
+	end)
+end
+
+function ProfessionMenu:CloseTrainerImagePreview(immediate)
+	local overlay = self.trainerImagePreviewOverlay
+	if not overlay or not overlay:IsShown() then
+		return
+	end
+
+	local config = getTrainerImagePreviewConfig(self.trainerImagePreviewKind, self.selectedTrainer)
+	overlay:SetScript("OnUpdate", nil)
+	self:ResizeWindow(self:GetTrainerDetailWindowName(self.selectedTrainer), immediate)
+
+	if immediate then
+		overlay:Hide()
+		overlay:SetAlpha(0)
+		self.trainerImagePreviewImage:SetTexture(nil)
+		self.trainerImagePreviewKind = nil
+		self.trainerImagePreviewProgress = nil
+		return
+	end
+
+	local elapsedTime = 0
+	local startAmount = self.trainerImagePreviewProgress or 1
+	overlay:SetScript("OnUpdate", function(activeOverlay, elapsed)
+		elapsedTime = elapsedTime + elapsed
+		local progress = math.min(elapsedTime / TRAINER_DETAIL_PREVIEW_DURATION, 1)
+		self:SetTrainerImagePreviewProgress(config, startAmount * (1 - easeOutCubic(progress)))
+
+		if progress >= 1 then
+			activeOverlay:SetScript("OnUpdate", nil)
+			activeOverlay:Hide()
+			activeOverlay:SetAlpha(0)
+			self.trainerImagePreviewImage:SetTexture(nil)
+			self.trainerImagePreviewKind = nil
+			self.trainerImagePreviewProgress = nil
+		end
+	end)
 end
 
 function ProfessionMenu:RefreshTrainerDetail()
@@ -675,13 +930,61 @@ function ProfessionMenu:RefreshTrainerDetail()
 		return
 	end
 
+	local hasMedia = trainer.modelImage or trainer.mapImage
+
 	self.trainerDetailHeaderTitle:SetText(trainer.name)
 	self.trainerDetailHeaderSubtitle:SetText(trainer.title or "Trainer")
 	setTrainerImage(self.trainerDetailImage, trainer, 86, 80, 42)
 	self.trainerDetailName:SetText(trainer.name)
 	self.trainerDetailRole:SetText(trainer.title or "Trainer")
 	self.trainerDetailLocation:SetText(getTrainerLocationText(trainer, true))
-	self.trainerDetailNpcID:SetText("Wowhead NPC ID: " .. tostring(trainer.npcID or ""))
+	self.trainerDetailNpcID:SetText("NPC ID: " .. tostring(trainer.npcID or ""))
+
+	if hasMedia then
+		self.trainerDetailPanel:SetSize(TRAINER_DETAIL_PANEL_WIDTH, TRAINER_DETAIL_MEDIA_PANEL_HEIGHT)
+		self.trainerDetailLocationLabel:ClearAllPoints()
+		self.trainerDetailLocationLabel:SetPoint("TOPLEFT", self.trainerDetailPanel, "TOPLEFT", 20, -196)
+		self.trainerDetailLocation:SetWidth(TRAINER_DETAIL_MAP_WIDTH)
+		self.trainerDetailLocation:ClearAllPoints()
+		self.trainerDetailLocation:SetPoint("TOPLEFT", self.trainerDetailLocationLabel, "BOTTOMLEFT", 0, -5)
+		self.trainerDetailWaypointButton:ClearAllPoints()
+		self.trainerDetailWaypointButton:SetPoint("TOPRIGHT", self.trainerDetailMapFrame, "TOPRIGHT", 0, 31)
+		self.trainerDetailMapFrame:ClearAllPoints()
+		self.trainerDetailMapFrame:SetPoint("TOPLEFT", self.trainerDetailLocation, "BOTTOMLEFT", 0, -12)
+	else
+		self.trainerDetailPanel:SetSize(TRAINER_DETAIL_PANEL_WIDTH, TRAINER_DETAIL_PANEL_HEIGHT)
+		self.trainerDetailLocationLabel:ClearAllPoints()
+		self.trainerDetailLocationLabel:SetPoint("TOPLEFT", self.trainerDetailImageFrame, "BOTTOMLEFT", 0, -18)
+		self.trainerDetailLocation:SetWidth(318)
+		self.trainerDetailLocation:ClearAllPoints()
+		self.trainerDetailLocation:SetPoint("TOPLEFT", self.trainerDetailLocationLabel, "BOTTOMLEFT", 0, -5)
+		self.trainerDetailWaypointButton:Hide()
+		self.trainerDetailMapFrame:Hide()
+	end
+
+	if setTrainerDetailImage(self.trainerDetailModel, trainer.modelImage, trainer.modelImageSize, TRAINER_DETAIL_MODEL_WIDTH, TRAINER_DETAIL_MODEL_HEIGHT) then
+		self.trainerDetailModelButton:Show()
+		self.trainerDetailNpcID:ClearAllPoints()
+		self.trainerDetailNpcID:SetPoint("TOP", self.trainerDetailModelFrame, "BOTTOM", 0, -8)
+		self.trainerDetailNpcID:SetWidth(140)
+		self.trainerDetailNpcID:SetJustifyH("CENTER")
+	else
+		self.trainerDetailModelButton:Hide()
+		self.trainerDetailNpcID:ClearAllPoints()
+		self.trainerDetailNpcID:SetPoint("TOPLEFT", self.trainerDetailLocation, "BOTTOMLEFT", 0, -8)
+		self.trainerDetailNpcID:SetWidth(318)
+		self.trainerDetailNpcID:SetJustifyH("LEFT")
+	end
+
+	if setTrainerDetailImage(self.trainerDetailMap, trainer.mapImage, trainer.mapImageSize, TRAINER_DETAIL_MAP_WIDTH, TRAINER_DETAIL_MAP_HEIGHT) then
+		self.trainerDetailMapFrame:Show()
+		self.trainerDetailMapButton:Show()
+		self.trainerDetailWaypointButton:Show()
+	else
+		self.trainerDetailMapFrame:Hide()
+		self.trainerDetailMapButton:Hide()
+		self.trainerDetailWaypointButton:Hide()
+	end
 end
 
 ProfessionMenu:RegisterCategoryInitializer(function(menu)

@@ -145,8 +145,6 @@ ns.ProfessionData = {
 					coords = "34.0, 84.4",
 					url = "https://www.wowhead.com/classic/npc=3373/arnok",
 					targetImage = trainerAssetPath("first-aid", "horde", "arnok", "target"),
-					modelImage = trainerAssetPath("first-aid", "horde", "arnok", "model"),
-					mapImage = trainerAssetPath("first-aid", "horde", "arnok", "map"),
 				},
 				{
 					id = "pand-stonebinder",
@@ -158,8 +156,6 @@ ns.ProfessionData = {
 					coords = "29.6, 21.4",
 					url = "https://www.wowhead.com/classic/npc=2798/pand-stonebinder",
 					targetImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "target"),
-					modelImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "model"),
-					mapImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "map"),
 				},
 				{
 					id = "mary-edras",
@@ -171,8 +167,6 @@ ns.ProfessionData = {
 					coords = "73.6, 55.6",
 					url = "https://www.wowhead.com/classic/npc=4591/mary-edras",
 					targetImage = trainerAssetPath("first-aid", "horde", "mary-edras", "target"),
-					modelImage = trainerAssetPath("first-aid", "horde", "mary-edras", "model"),
-					mapImage = trainerAssetPath("first-aid", "horde", "mary-edras", "map"),
 				},
 				{
 					id = "doctor-gregory-victor",
@@ -184,8 +178,6 @@ ns.ProfessionData = {
 					coords = "73.0, 36.0",
 					url = "https://www.wowhead.com/classic/npc=12920/doctor-gregory-victor",
 					targetImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "target"),
-					modelImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "model"),
-					mapImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "map"),
 				},
 				{
 					id = "nurse-neela",
@@ -197,8 +189,6 @@ ns.ProfessionData = {
 					coords = "61.8, 52.8",
 					url = "https://www.wowhead.com/classic/npc=5759/nurse-neela",
 					targetImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "target"),
-					modelImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "model"),
-					mapImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "map"),
 				},
 				{
 					id = "rawrk",
@@ -210,8 +200,6 @@ ns.ProfessionData = {
 					coords = "54.0, 42.0",
 					url = "https://www.wowhead.com/classic/npc=5943/rawrk",
 					targetImage = trainerAssetPath("first-aid", "horde", "rawrk", "target"),
-					modelImage = trainerAssetPath("first-aid", "horde", "rawrk", "model"),
-					mapImage = trainerAssetPath("first-aid", "horde", "rawrk", "map"),
 				},
 				{
 					id = "vira-younghoof",
@@ -223,8 +211,6 @@ ns.ProfessionData = {
 					coords = "46.8, 60.8",
 					url = "https://www.wowhead.com/classic/npc=5939/vira-younghoof",
 					targetImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "target"),
-					modelImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "model"),
-					mapImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "map"),
 				},
 			},
 			alliance = {
@@ -239,6 +225,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=2327/shaina-fuller",
 					targetImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "model"),
+					modelImageSize = { 504, 914 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "map"),
 				},
 				{
@@ -252,6 +239,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=4211/dannelor",
 					targetImage = trainerAssetPath("first-aid", "alliance", "dannelor", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "dannelor", "model"),
+					modelImageSize = { 395, 958 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "dannelor", "map"),
 				},
 				{
@@ -265,6 +253,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=5150/nissa-firestone",
 					targetImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "model"),
+					modelImageSize = { 348, 632 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "map"),
 				},
 				{
@@ -278,6 +267,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=2329/michelle-belle",
 					targetImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "model"),
+					modelImageSize = { 374, 959 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "map"),
 				},
 				{
@@ -291,6 +281,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=12939/doctor-gustaf-vanhowzen",
 					targetImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "model"),
+					modelImageSize = { 464, 984 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "map"),
 				},
 				{
@@ -304,6 +295,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=6094/byancie",
 					targetImage = trainerAssetPath("first-aid", "alliance", "byancie", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "byancie", "model"),
+					modelImageSize = { 353, 994 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "byancie", "map"),
 				},
 				{
@@ -317,6 +309,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=3181/fremal-doohickey",
 					targetImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "model"),
+					modelImageSize = { 524, 770 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "map"),
 				},
 				{
@@ -330,6 +323,7 @@ ns.ProfessionData = {
 					url = "https://www.wowhead.com/classic/npc=2326/thamner-pol",
 					targetImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "target"),
 					modelImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "model"),
+					modelImageSize = { 467, 666 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "map"),
 				},
 			},
