@@ -236,7 +236,6 @@ function ProfessionMenu:CreateTrainerMenuView()
 	scrollTrack:SetSize(TRAINER_SCROLL_TRACK_WIDTH, TRAINER_LIST_HEIGHT)
 	scrollTrack:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", TRAINER_SCROLL_GAP, 0)
 	scrollTrack:EnableMouse(true)
-	scrollTrack:RegisterForDrag("LeftButton")
 	scrollTrack:Hide()
 
 	local trackTexture = scrollTrack:CreateTexture(nil, "BACKGROUND")
@@ -252,15 +251,9 @@ function ProfessionMenu:CreateTrainerMenuView()
 			return
 		end
 
-		self:StartTrainerScrollDrag(track)
+		self:HandleTrainerScrollTrackMouseDown(track)
 	end)
 	scrollTrack:SetScript("OnMouseUp", function()
-		self:StopTrainerScrollDrag()
-	end)
-	scrollTrack:SetScript("OnDragStart", function(track)
-		self:StartTrainerScrollDrag(track)
-	end)
-	scrollTrack:SetScript("OnDragStop", function()
 		self:StopTrainerScrollDrag()
 	end)
 
@@ -709,18 +702,91 @@ function ProfessionMenu:UpdateTrainerSmoothScroll(elapsed)
 	self:RefreshTrainerScrollIndicator()
 end
 
-function ProfessionMenu:StartTrainerScrollDrag(track)
+function ProfessionMenu:GetTrainerScrollCursorOffset(track)
+	if not track then
+		return nil
+	end
+
+	local _, cursorY = GetCursorPosition()
+	local scale = track:GetEffectiveScale() or 1
+	local top = track:GetTop()
+	if not cursorY or not top then
+		return nil
+	end
+
+	return top - (cursorY / scale)
+end
+
+function ProfessionMenu:GetTrainerScrollGeometry(track)
+	if not track then
+		return nil
+	end
+
+	local height = track:GetHeight() or TRAINER_LIST_HEIGHT
+	if height <= 0 then
+		return nil
+	end
+
+	local maxScroll = self.trainerScrollMax or 0
+	local thumbHeight = self.trainerScrollThumb and (self.trainerScrollThumb:GetHeight() or TRAINER_SCROLL_THUMB_MIN_HEIGHT) or TRAINER_SCROLL_THUMB_MIN_HEIGHT
+	local travel = math.max(height - thumbHeight, 1)
+	local current = self.trainerScrollFrame and (self.trainerScrollFrame:GetVerticalScroll() or 0) or 0
+	local thumbOffset = maxScroll > 0 and (current / maxScroll) * travel or 0
+
+	return height, thumbHeight, travel, thumbOffset
+end
+
+function ProfessionMenu:HandleTrainerScrollTrackMouseDown(track)
+	if not track or (self.trainerScrollMax or 0) <= 0 then
+		return
+	end
+
+	local cursorOffset = self:GetTrainerScrollCursorOffset(track)
+	local _, thumbHeight, _, thumbOffset = self:GetTrainerScrollGeometry(track)
+	if not cursorOffset or not thumbHeight or not thumbOffset then
+		return
+	end
+
+	if cursorOffset >= thumbOffset and cursorOffset <= (thumbOffset + thumbHeight) then
+		self:StartTrainerScrollDrag(track, cursorOffset - thumbOffset)
+		return
+	end
+
+	self:PageTrainerScrollFromTrackClick(cursorOffset, thumbOffset, thumbHeight)
+end
+
+function ProfessionMenu:PageTrainerScrollFromTrackClick(cursorOffset, thumbOffset, thumbHeight)
+	if not cursorOffset or not thumbOffset or not thumbHeight then
+		return
+	end
+
+	local current = (self.trainerScrollFrame and (self.trainerScrollFrame:GetVerticalScroll() or 0)) or self.trainerScrollTarget or 0
+	local pageAmount = math.max(TRAINER_SCROLL_STEP, TRAINER_LIST_HEIGHT - TRAINER_ROW_HEIGHT)
+	if cursorOffset < thumbOffset then
+		self:SetTrainerScrollTarget(current - pageAmount)
+	elseif cursorOffset > (thumbOffset + thumbHeight) then
+		self:SetTrainerScrollTarget(current + pageAmount)
+	end
+end
+
+function ProfessionMenu:StartTrainerScrollDrag(track, gripOffset)
 	if not track or (self.trainerScrollMax or 0) <= 0 then
 		return
 	end
 
 	self.trainerDraggingScroll = true
+	self.trainerScrollDragGripOffset = gripOffset or (self.trainerScrollThumb and ((self.trainerScrollThumb:GetHeight() or TRAINER_SCROLL_THUMB_MIN_HEIGHT) / 2)) or (TRAINER_SCROLL_THUMB_MIN_HEIGHT / 2)
 	if self.trainerScrollAnimator then
 		self.trainerScrollAnimator:SetScript("OnUpdate", nil)
 		self.trainerScrollAnimator:Hide()
 	end
 
 	track:SetScript("OnUpdate", function(activeTrack)
+		if IsMouseButtonDown and not IsMouseButtonDown("LeftButton") then
+			self:StopTrainerScrollDrag()
+			return
+		end
+
 		self:UpdateTrainerScrollFromCursor(activeTrack)
 	end)
 	self:UpdateTrainerScrollFromCursor(track)
@@ -728,6 +794,7 @@ end
 
 function ProfessionMenu:StopTrainerScrollDrag()
 	self.trainerDraggingScroll = false
+	self.trainerScrollDragGripOffset = nil
 	if self.trainerScrollTrack then
 		self.trainerScrollTrack:SetScript("OnUpdate", nil)
 	end
@@ -738,18 +805,14 @@ function ProfessionMenu:UpdateTrainerScrollFromCursor(track)
 		return
 	end
 
-	local _, cursorY = GetCursorPosition()
-	local scale = track:GetEffectiveScale() or 1
-	local top = track:GetTop()
-	local height = track:GetHeight() or TRAINER_LIST_HEIGHT
-	if not cursorY or not top or height <= 0 then
+	local cursorOffset = self:GetTrainerScrollCursorOffset(track)
+	local _, thumbHeight, travel = self:GetTrainerScrollGeometry(track)
+	if not cursorOffset or not thumbHeight or not travel then
 		return
 	end
 
-	local y = cursorY / scale
-	local thumbHeight = self.trainerScrollThumb and (self.trainerScrollThumb:GetHeight() or TRAINER_SCROLL_THUMB_MIN_HEIGHT) or TRAINER_SCROLL_THUMB_MIN_HEIGHT
-	local travel = math.max(height - thumbHeight, 1)
-	local offset = clamp(top - y - (thumbHeight / 2), 0, travel)
+	local gripOffset = clamp(self.trainerScrollDragGripOffset or (thumbHeight / 2), 0, thumbHeight)
+	local offset = clamp(cursorOffset - gripOffset, 0, travel)
 	local target = (offset / travel) * (self.trainerScrollMax or 0)
 
 	self:SetTrainerScrollTarget(target, true)
