@@ -25,6 +25,9 @@ local TRAINER_DETAIL_MAP_PREVIEW_WIDTH = 760
 local TRAINER_DETAIL_MAP_PREVIEW_HEIGHT = 524
 local TRAINER_DETAIL_PREVIEW_PADDING = 5
 local TRAINER_DETAIL_PREVIEW_DURATION = 0.22
+local TRAINER_DETAIL_IMAGE_HINT_TEXT = "Click to enlarge"
+local TRAINER_DETAIL_IMAGE_HINT_WIDTH = 112
+local TRAINER_DETAIL_IMAGE_HINT_HEIGHT = 22
 local TRAINER_SCROLL_GAP = 10
 local TRAINER_SCROLL_TRACK_WIDTH = 8
 local TRAINER_SCROLL_THUMB_MIN_HEIGHT = 36
@@ -90,19 +93,6 @@ local function getTrainerLocationText(trainer, includeCoords)
 	return location
 end
 
-local function setTrainerImage(texture, trainer, imageWidth, imageHeight, fallbackSize)
-	if trainer and trainer.targetImage then
-		texture:SetSize(imageWidth, imageHeight)
-		texture:SetTexture(trainer.targetImage)
-		texture:SetTexCoord(0, 1, 0, 1)
-		return
-	end
-
-	local iconSize = fallbackSize or math.min(imageWidth, imageHeight)
-	texture:SetSize(iconSize, iconSize)
-	setIcon(texture, (trainer and trainer.icon) or TRAINER_FALLBACK_ICON)
-end
-
 local function getImageSize(imageSize)
 	if not imageSize then
 		return nil, nil
@@ -121,6 +111,21 @@ local function fitImageSize(imageSize, maxWidth, maxHeight)
 	return sourceWidth * scale, sourceHeight * scale
 end
 
+local function setTrainerImage(texture, trainer, imageWidth, imageHeight, fallbackSize)
+	if trainer and trainer.targetImage then
+		local width, height = fitImageSize(trainer.targetImageSize, imageWidth, imageHeight)
+
+		texture:SetSize(width, height)
+		texture:SetTexture(trainer.targetImage)
+		texture:SetTexCoord(0, 1, 0, 1)
+		return
+	end
+
+	local iconSize = fallbackSize or math.min(imageWidth, imageHeight)
+	texture:SetSize(iconSize, iconSize)
+	setIcon(texture, (trainer and trainer.icon) or TRAINER_FALLBACK_ICON)
+end
+
 local function setTrainerDetailImage(texture, imagePath, imageSize, maxWidth, maxHeight)
 	if imagePath then
 		local width, height = fitImageSize(imageSize, maxWidth or texture:GetWidth(), maxHeight or texture:GetHeight())
@@ -131,12 +136,28 @@ local function setTrainerDetailImage(texture, imagePath, imageSize, maxWidth, ma
 		texture:SetTexture(imagePath)
 		texture:SetTexCoord(0, 1, 0, 1)
 		texture:Show()
-		return true
+		return true, width, height
 	end
 
 	texture:SetTexture(nil)
 	texture:Hide()
 	return false
+end
+
+local function createTrainerImageHoverHint(parent)
+	local hint = CreateFrame("Frame", nil, parent, ns:GetBackdropTemplate())
+	hint:SetSize(TRAINER_DETAIL_IMAGE_HINT_WIDTH, TRAINER_DETAIL_IMAGE_HINT_HEIGHT)
+	hint:SetPoint("CENTER", parent, "CENTER", 0, 0)
+	hint:SetFrameLevel((parent:GetFrameLevel() or 0) + 2)
+	applyBackdrop(hint, BUTTON_BACKDROP, { 0.010, 0.010, 0.012, 0.52 }, { 0.42, 0.36, 0.24, 0.58 })
+	hint:Hide()
+
+	local text = hint:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	text:SetPoint("CENTER", hint, "CENTER", 0, 0)
+	text:SetText(TRAINER_DETAIL_IMAGE_HINT_TEXT)
+	setTextColor(text, GOLD_SOFT)
+
+	return hint
 end
 
 local function getTrainerImagePreviewConfig(imageKind, trainer)
@@ -440,11 +461,21 @@ function ProfessionMenu:CreateTrainerDetailView()
 	modelButton:EnableMouse(true)
 	modelButton:RegisterForClicks("LeftButtonUp")
 	modelButton:Hide()
+	local modelHint = createTrainerImageHoverHint(modelButton)
+	modelButton:SetScript("OnEnter", function(button)
+		if not self.trainerImagePreviewOverlay or not self.trainerImagePreviewOverlay:IsShown() then
+			button.enlargeHint:Show()
+		end
+	end)
+	modelButton:SetScript("OnLeave", function(button)
+		button.enlargeHint:Hide()
+	end)
 	modelButton:SetScript("OnClick", function()
 		if self.selectedTrainer and self.selectedTrainer.modelImage then
 			self:OpenTrainerImagePreview(self.selectedTrainer.modelImage, "model")
 		end
 	end)
+	modelButton.enlargeHint = modelHint
 
 	local npcID = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	npcID:SetPoint("TOP", modelFrame, "BOTTOM", 0, -8)
@@ -466,11 +497,21 @@ function ProfessionMenu:CreateTrainerDetailView()
 	mapButton:EnableMouse(true)
 	mapButton:RegisterForClicks("LeftButtonUp")
 	mapButton:Hide()
+	local mapHint = createTrainerImageHoverHint(mapButton)
+	mapButton:SetScript("OnEnter", function(button)
+		if not self.trainerImagePreviewOverlay or not self.trainerImagePreviewOverlay:IsShown() then
+			button.enlargeHint:Show()
+		end
+	end)
+	mapButton:SetScript("OnLeave", function(button)
+		button.enlargeHint:Hide()
+	end)
 	mapButton:SetScript("OnClick", function()
 		if self.selectedTrainer and self.selectedTrainer.mapImage then
 			self:OpenTrainerImagePreview(self.selectedTrainer.mapImage, "map")
 		end
 	end)
+	mapButton.enlargeHint = mapHint
 
 	local previewOverlay = CreateFrame("Button", nil, view)
 	previewOverlay:SetAllPoints(view)
@@ -510,6 +551,8 @@ function ProfessionMenu:CreateTrainerDetailView()
 	self.trainerDetailMap = map
 	self.trainerDetailModelButton = modelButton
 	self.trainerDetailMapButton = mapButton
+	self.trainerDetailModelHint = modelHint
+	self.trainerDetailMapHint = mapHint
 	self.trainerDetailMapFrame = mapFrame
 	self.trainerDetailModelFrame = modelFrame
 	self.trainerDetailNpcID = npcID
@@ -859,12 +902,23 @@ function ProfessionMenu:SetTrainerImagePreviewProgress(config, amount)
 	frame:SetPoint("CENTER", overlay, "CENTER", 0, 0)
 end
 
+function ProfessionMenu:HideTrainerImageHoverHints()
+	if self.trainerDetailModelHint then
+		self.trainerDetailModelHint:Hide()
+	end
+
+	if self.trainerDetailMapHint then
+		self.trainerDetailMapHint:Hide()
+	end
+end
+
 function ProfessionMenu:OpenTrainerImagePreview(imagePath, imageKind)
 	if not imagePath or not self.trainerImagePreviewOverlay or not self.trainerImagePreviewFrame or not self.trainerImagePreviewImage then
 		return
 	end
 
 	local config = getTrainerImagePreviewConfig(imageKind, self.selectedTrainer)
+	self:HideTrainerImageHoverHints()
 	self.trainerImagePreviewKind = imageKind
 	self.trainerImagePreviewOverlay:SetScript("OnUpdate", nil)
 	self.trainerImagePreviewImage:SetTexture(imagePath)
@@ -962,13 +1016,19 @@ function ProfessionMenu:RefreshTrainerDetail()
 		self.trainerDetailMapFrame:Hide()
 	end
 
-	if setTrainerDetailImage(self.trainerDetailModel, trainer.modelImage, trainer.modelImageSize, TRAINER_DETAIL_MODEL_WIDTH, TRAINER_DETAIL_MODEL_HEIGHT) then
+	local hasModel, modelWidth, modelHeight = setTrainerDetailImage(self.trainerDetailModel, trainer.modelImage, trainer.modelImageSize, TRAINER_DETAIL_MODEL_WIDTH, TRAINER_DETAIL_MODEL_HEIGHT)
+	if hasModel then
+		self.trainerDetailModelButton:ClearAllPoints()
+		self.trainerDetailModelButton:SetPoint("CENTER", self.trainerDetailModelFrame, "CENTER", 0, 0)
+		self.trainerDetailModelButton:SetSize(modelWidth, modelHeight)
+		self.trainerDetailModelHint:Hide()
 		self.trainerDetailModelButton:Show()
 		self.trainerDetailNpcID:ClearAllPoints()
 		self.trainerDetailNpcID:SetPoint("TOP", self.trainerDetailModelFrame, "BOTTOM", 0, -8)
 		self.trainerDetailNpcID:SetWidth(140)
 		self.trainerDetailNpcID:SetJustifyH("CENTER")
 	else
+		self.trainerDetailModelHint:Hide()
 		self.trainerDetailModelButton:Hide()
 		self.trainerDetailNpcID:ClearAllPoints()
 		self.trainerDetailNpcID:SetPoint("TOPLEFT", self.trainerDetailLocation, "BOTTOMLEFT", 0, -8)
@@ -976,11 +1036,17 @@ function ProfessionMenu:RefreshTrainerDetail()
 		self.trainerDetailNpcID:SetJustifyH("LEFT")
 	end
 
-	if setTrainerDetailImage(self.trainerDetailMap, trainer.mapImage, trainer.mapImageSize, TRAINER_DETAIL_MAP_WIDTH, TRAINER_DETAIL_MAP_HEIGHT) then
+	local hasMap, mapWidth, mapHeight = setTrainerDetailImage(self.trainerDetailMap, trainer.mapImage, trainer.mapImageSize, TRAINER_DETAIL_MAP_WIDTH, TRAINER_DETAIL_MAP_HEIGHT)
+	if hasMap then
 		self.trainerDetailMapFrame:Show()
+		self.trainerDetailMapButton:ClearAllPoints()
+		self.trainerDetailMapButton:SetPoint("CENTER", self.trainerDetailMapFrame, "CENTER", 0, 0)
+		self.trainerDetailMapButton:SetSize(mapWidth, mapHeight)
+		self.trainerDetailMapHint:Hide()
 		self.trainerDetailMapButton:Show()
 		self.trainerDetailWaypointButton:Show()
 	else
+		self.trainerDetailMapHint:Hide()
 		self.trainerDetailMapFrame:Hide()
 		self.trainerDetailMapButton:Hide()
 		self.trainerDetailWaypointButton:Hide()
