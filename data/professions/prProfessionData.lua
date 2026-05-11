@@ -6,6 +6,189 @@ local function trainerAssetPath(professionID, factionID, trainerID, imageType)
 	return SCREENSHOT_ROOT .. "\\trainers\\" .. professionID .. "\\" .. factionID .. "\\" .. trainerID .. "\\" .. imageType .. ".png"
 end
 
+local function firstAidTrainerTeaches()
+	return {
+		{
+			name = "First Aid",
+			rank = "Apprentice",
+			type = "rank",
+			spellID = 3273,
+			source = "Trainer",
+			requiredSkill = 0,
+			skillCap = 75,
+			description = "Initial First Aid training and early bandage access.",
+			wowheadURL = "https://www.wowhead.com/classic/spell=3273/first-aid",
+		},
+		{
+			name = "First Aid",
+			rank = "Journeyman",
+			type = "rank",
+			spellID = 3274,
+			source = "Trainer",
+			requiredSkill = 50,
+			skillCap = 150,
+			description = "Extends First Aid training beyond Apprentice.",
+			wowheadURL = "https://www.wowhead.com/classic/spell=3274/first-aid",
+		},
+		{
+			name = "Anti-Venom",
+			type = "craft",
+			spellID = 7934,
+			source = "Trainer",
+			requiredSkill = 80,
+			castTime = "3 sec",
+			reagents = {
+				{ itemID = 1475, name = "Small Venom Sac", quantity = 1 },
+			},
+			creates = {
+				itemID = 6452,
+				name = "Anti-Venom",
+				quantity = 3,
+			},
+			effect = "Cures poisons up to level 25. 1 min cooldown.",
+			skillColors = { 80, 80, 115, 150 },
+			wowheadURL = "https://www.wowhead.com/classic/spell=7934/anti-venom",
+		},
+		{
+			name = "Wool Bandage",
+			type = "craft",
+			spellID = 3277,
+			source = "Trainer",
+			requiredSkill = 80,
+			itemRequiredSkill = 50,
+			castTime = "3 sec",
+			reagents = {
+				{ itemID = 2592, name = "Wool Cloth", quantity = 1 },
+			},
+			creates = {
+				itemID = 3530,
+				name = "Wool Bandage",
+				quantity = 1,
+			},
+			effect = "Heals 161 damage over 7 sec.",
+			skillColors = { 80, 80, 115, 150 },
+			wowheadURL = "https://www.wowhead.com/classic/spell=3277/wool-bandage",
+		},
+		{
+			name = "Heavy Wool Bandage",
+			type = "craft",
+			spellID = 3278,
+			source = "Trainer",
+			requiredSkill = 115,
+			itemRequiredSkill = 75,
+			castTime = "3 sec",
+			reagents = {
+				{ itemID = 2592, name = "Wool Cloth", quantity = 2 },
+			},
+			creates = {
+				itemID = 3531,
+				name = "Heavy Wool Bandage",
+				quantity = 1,
+			},
+			effect = "Heals 301 damage over 7 sec.",
+			skillColors = { 115, 115, 150, 185 },
+			wowheadURL = "https://www.wowhead.com/classic/spell=3278/heavy-wool-bandage",
+		},
+		{
+			name = "Silk Bandage",
+			type = "craft",
+			spellID = 7928,
+			source = "Trainer",
+			requiredSkill = 150,
+			itemRequiredSkill = 100,
+			castTime = "3 sec",
+			reagents = {
+				{ itemID = 4306, name = "Silk Cloth", quantity = 1 },
+			},
+			creates = {
+				itemID = 6450,
+				name = "Silk Bandage",
+				quantity = 1,
+			},
+			effect = "Heals 400 damage over 8 sec.",
+			skillColors = { 150, 150, 180, 210 },
+			wowheadURL = "https://www.wowhead.com/classic/spell=7928/silk-bandage",
+		},
+	}
+end
+
+local function firstAidTraumaSurgeonTeaches()
+	return {
+		{
+			name = "First Aid",
+			rank = "Artisan",
+			type = "rank",
+			spellID = 10846,
+			source = "Quest",
+			requiredSkill = 225,
+			characterLevel = 35,
+			skillCap = 300,
+			description = "Complete Triage to raise the First Aid cap to 300.",
+			wowheadURL = "https://www.wowhead.com/classic/spell=10846/first-aid",
+		},
+		{
+			name = "Heavy Mageweave Bandage",
+			type = "craft",
+			spellID = 10841,
+			source = "Trainer",
+			requiredSkill = 240,
+			itemRequiredSkill = 175,
+			castTime = "3 sec",
+			reagents = {
+				{ itemID = 4338, name = "Mageweave Cloth", quantity = 2 },
+			},
+			creates = {
+				itemID = 8545,
+				name = "Heavy Mageweave Bandage",
+				quantity = 1,
+			},
+			effect = "Heals 1104 damage over 8 sec.",
+			skillColors = { 240, 240, 270, 300 },
+			wowheadURL = "https://www.wowhead.com/classic/spell=10841/heavy-mageweave-bandage",
+		},
+		{
+			name = "Runecloth Bandage",
+			type = "craft",
+			spellID = 18629,
+			source = "Trainer",
+			requiredSkill = 260,
+			itemRequiredSkill = 200,
+			castTime = "3 sec",
+			reagents = {
+				{ itemID = 14047, name = "Runecloth", quantity = 1 },
+			},
+			creates = {
+				itemID = 14529,
+				name = "Runecloth Bandage",
+				quantity = 1,
+			},
+			effect = "Heals 1360 damage over 8 sec.",
+			skillColors = { 260, 260, 290, 320 },
+			wowheadURL = "https://www.wowhead.com/classic/spell=18629/runecloth-bandage",
+		},
+		{
+			name = "Heavy Runecloth Bandage",
+			type = "craft",
+			spellID = 18630,
+			source = "Trainer",
+			requiredSkill = 290,
+			itemRequiredSkill = 225,
+			castTime = "3 sec",
+			reagents = {
+				{ itemID = 14047, name = "Runecloth", quantity = 2 },
+			},
+			creates = {
+				itemID = 14530,
+				name = "Heavy Runecloth Bandage",
+				quantity = 1,
+			},
+			effect = "Heals 2000 damage over 8 sec.",
+			skillColors = { 290, 290, 320, 350 },
+			wowheadURL = "https://www.wowhead.com/classic/spell=18630/heavy-runecloth-bandage",
+		},
+	}
+end
+
 ns.ProfessionData = {
 	menuSections = {
 		{
@@ -149,6 +332,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "horde", "arnok", "model"),
 					modelImageSize = { 793, 713 },
 					mapImage = trainerAssetPath("first-aid", "horde", "arnok", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "pand-stonebinder",
@@ -164,6 +348,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "model"),
 					modelImageSize = { 740, 967 },
 					mapImage = trainerAssetPath("first-aid", "horde", "pand-stonebinder", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "mary-edras",
@@ -179,6 +364,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "horde", "mary-edras", "model"),
 					modelImageSize = { 333, 646 },
 					mapImage = trainerAssetPath("first-aid", "horde", "mary-edras", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "doctor-gregory-victor",
@@ -194,6 +380,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "model"),
 					modelImageSize = { 516, 931 },
 					mapImage = trainerAssetPath("first-aid", "horde", "doctor-gregory-victor", "map"),
+					teaches = firstAidTraumaSurgeonTeaches(),
 				},
 				{
 					id = "nurse-neela",
@@ -209,6 +396,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "model"),
 					modelImageSize = { 332, 723 },
 					mapImage = trainerAssetPath("first-aid", "horde", "nurse-neela", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "rawrk",
@@ -224,6 +412,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "horde", "rawrk", "model"),
 					modelImageSize = { 512, 741 },
 					mapImage = trainerAssetPath("first-aid", "horde", "rawrk", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "vira-younghoof",
@@ -239,6 +428,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "model"),
 					modelImageSize = { 544, 959 },
 					mapImage = trainerAssetPath("first-aid", "horde", "vira-younghoof", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 			},
 			alliance = {
@@ -256,6 +446,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "model"),
 					modelImageSize = { 504, 914 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "shaina-fuller", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "dannelor",
@@ -271,6 +462,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "dannelor", "model"),
 					modelImageSize = { 395, 958 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "dannelor", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "nissa-firestone",
@@ -286,6 +478,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "model"),
 					modelImageSize = { 348, 632 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "nissa-firestone", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "michelle-belle",
@@ -301,6 +494,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "model"),
 					modelImageSize = { 374, 959 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "michelle-belle", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "doctor-gustaf-vanhowzen",
@@ -316,6 +510,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "model"),
 					modelImageSize = { 464, 984 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "doctor-gustaf-vanhowzen", "map"),
+					teaches = firstAidTraumaSurgeonTeaches(),
 				},
 				{
 					id = "byancie",
@@ -331,6 +526,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "byancie", "model"),
 					modelImageSize = { 353, 994 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "byancie", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "fremal-doohickey",
@@ -346,6 +542,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "model"),
 					modelImageSize = { 524, 770 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "fremal-doohickey", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 				{
 					id = "thamner-pol",
@@ -361,6 +558,7 @@ ns.ProfessionData = {
 					modelImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "model"),
 					modelImageSize = { 467, 666 },
 					mapImage = trainerAssetPath("first-aid", "alliance", "thamner-pol", "map"),
+					teaches = firstAidTrainerTeaches(),
 				},
 			},
 		},

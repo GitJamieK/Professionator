@@ -34,6 +34,19 @@ local TRAINER_SCROLL_THUMB_MIN_HEIGHT = 36
 local TRAINER_SCROLL_STEP = 82
 local TRAINER_SCROLL_SMOOTHING = 16
 local TRAINER_FALLBACK_ICON = "Interface\\Icons\\INV_Misc_Bandage_11"
+local TRAINER_TEACHES_BUTTON_WIDTH = 142
+local TRAINER_TEACHES_BUTTON_HEIGHT = 26
+local TRAINER_TEACHES_PANEL_WIDTH = TRAINER_DETAIL_PANEL_WIDTH
+local TRAINER_TEACHES_PANEL_HEIGHT = TRAINER_DETAIL_MEDIA_PANEL_HEIGHT
+local TRAINER_TEACH_ROW_WIDTH = 456
+local TRAINER_TEACH_ROW_COLLAPSED_HEIGHT = 52
+local TRAINER_TEACH_ROW_EXPANDED_HEIGHT = 112
+local TRAINER_TEACH_ROW_GAP = 8
+local TRAINER_TEACH_ICON_SIZE = 34
+local TRAINER_TEACH_LIST_HEIGHT = 530
+local TRAINER_TEACH_ANIMATION_DURATION = 0.20
+local TRAINER_REAGENT_ICON_SIZE = 22
+local TRAINER_REAGENT_ICON_GAP = 5
 local SCREEN_PADDING_X = Shared.SCREEN_PADDING_X
 local BUTTON_BACKDROP = Shared.BUTTON_BACKDROP
 local GOLD = Shared.Colors.GOLD
@@ -46,6 +59,7 @@ local applyBackdrop = Shared.ApplyBackdrop
 local setTextColor = Shared.SetTextColor
 local easeOutCubic = Shared.EaseOutCubic
 local setIcon = Shared.SetIcon
+local getSpellTexture = Shared.GetSpellTexture
 local setTextureCoordinates = Shared.SetTextureCoordinates
 local createBody = Shared.CreateBody
 local setBodyOffset = Shared.SetBodyOffset
@@ -58,6 +72,7 @@ Shared.RegisterWindowSize("trainerDetail", 570, 390)
 Shared.RegisterWindowSize("trainerDetailMedia", 570, 740)
 Shared.RegisterWindowSize("trainerDetailModelPreview", 570, 740)
 Shared.RegisterWindowSize("trainerDetailMapPreview", 860, 760)
+Shared.RegisterWindowSize("trainerTeaches", 570, 740)
 
 local TRAINER_FACTIONS = {
 	{
@@ -196,6 +211,130 @@ local function clamp(value, minimum, maximum)
 	end
 
 	return value
+end
+
+local function hasTrainerTeaches(trainer)
+	return trainer and trainer.teaches and #trainer.teaches > 0
+end
+
+local function getTrainerTeachName(teach)
+	if not teach then
+		return ""
+	end
+
+	if teach.rank and teach.rank ~= "" then
+		return teach.name .. " - " .. teach.rank
+	end
+
+	return teach.name or ""
+end
+
+local function formatFirstAidSkill(skill)
+	if not skill or skill <= 0 then
+		return "No prior skill"
+	end
+
+	return "First Aid " .. tostring(skill)
+end
+
+local function formatTrainerTeachReagents(teach)
+	if not teach or not teach.reagents or #teach.reagents == 0 then
+		return "None"
+	end
+
+	local reagents = {}
+	for index, reagent in ipairs(teach.reagents) do
+		reagents[index] = reagent.name .. " x" .. tostring(reagent.quantity or 1)
+	end
+
+	return table.concat(reagents, ", ")
+end
+
+local function formatTrainerTeachCreates(teach)
+	if not teach or not teach.creates then
+		return nil
+	end
+
+	local quantity = teach.creates.quantity or 1
+	if quantity > 1 then
+		return teach.creates.name .. " x" .. tostring(quantity)
+	end
+
+	return teach.creates.name
+end
+
+local function getItemIcon(itemID, fallback)
+	if itemID then
+		local icon
+		if C_Item and C_Item.GetItemIconByID then
+			icon = C_Item.GetItemIconByID(itemID)
+		elseif GetItemIcon then
+			icon = GetItemIcon(itemID)
+		end
+
+		if icon then
+			return icon
+		end
+	end
+
+	return fallback or "Interface\\Icons\\INV_Misc_QuestionMark"
+end
+
+local function getTrainerTeachIcon(teach)
+	local fallback = getSpellTexture(teach and teach.spellID, (teach and teach.icon) or TRAINER_FALLBACK_ICON)
+	if teach and teach.creates and teach.creates.itemID then
+		return getItemIcon(teach.creates.itemID, fallback)
+	end
+
+	return fallback
+end
+
+local function showItemTooltip(frame)
+	if not frame or not GameTooltip then
+		return
+	end
+
+	GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+	if frame.itemID then
+		if GameTooltip.SetItemByID then
+			GameTooltip:SetItemByID(frame.itemID)
+		else
+			GameTooltip:SetHyperlink("item:" .. tostring(frame.itemID))
+		end
+	elseif frame.reagentName then
+		GameTooltip:SetText(frame.reagentName)
+	end
+	GameTooltip:Show()
+end
+
+local function hideItemTooltip()
+	if GameTooltip then
+		GameTooltip:Hide()
+	end
+end
+
+local function getTrainerTeachLines(teach)
+	if not teach then
+		return "", "", "", ""
+	end
+
+	local requirementLine = "Train: " .. formatFirstAidSkill(teach.requiredSkill)
+	if teach.characterLevel then
+		requirementLine = requirementLine .. "   Level " .. tostring(teach.characterLevel)
+	end
+
+	if teach.type == "rank" then
+		return requirementLine,
+			"Cap: First Aid " .. tostring(teach.skillCap or ""),
+			teach.description or "",
+			""
+	end
+
+	if teach.itemRequiredSkill then
+		requirementLine = requirementLine .. "   Use: " .. formatFirstAidSkill(teach.itemRequiredSkill)
+	end
+
+	return requirementLine, "", "", ""
 end
 
 function ProfessionMenu:CreateTrainerMenuView()
@@ -385,6 +524,331 @@ function ProfessionMenu:CreateTrainerButton(parent)
 	return button
 end
 
+function ProfessionMenu:CreateTrainerTeachesButton(parent)
+	local button = CreateFrame("Button", nil, parent, ns:GetBackdropTemplate())
+	button:SetSize(TRAINER_TEACHES_BUTTON_WIDTH, TRAINER_TEACHES_BUTTON_HEIGHT)
+	button:RegisterForClicks("LeftButtonUp")
+	applyBackdrop(button, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, 0.90 }, { 0.30, 0.30, 0.31, 1 })
+
+	local highlight = createTint(button, GOLD[1], GOLD[2], GOLD[3], 0.24)
+	local body = createBody(button)
+
+	local icon = body:CreateTexture(nil, "OVERLAY")
+	icon:SetSize(16, 16)
+	icon:SetPoint("LEFT", body, "LEFT", 11, 0)
+	setIcon(icon, "Interface\\Icons\\INV_Scroll_03")
+
+	local label = body:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	label:SetPoint("LEFT", icon, "RIGHT", 7, 0)
+	label:SetWidth(96)
+	label:SetJustifyH("LEFT")
+	label:SetText("Teaches... >")
+	setTextColor(label, TEXT)
+
+	button.highlight = highlight
+	button.label = label
+	button:SetScript("OnEnter", function(teachesButton)
+		teachesButton.highlight:SetAlpha(0.62)
+		applyBackdrop(teachesButton, BUTTON_BACKDROP, { 0.047, 0.041, 0.026, 0.98 }, BORDER_BRIGHT)
+		teachesButton.label:SetTextColor(1, 0.93, 0.66, 1)
+	end)
+	button:SetScript("OnLeave", function(teachesButton)
+		teachesButton.highlight:SetAlpha(0)
+		applyBackdrop(teachesButton, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, 0.90 }, { 0.30, 0.30, 0.31, 1 })
+		setTextColor(teachesButton.label, TEXT)
+	end)
+	button:SetScript("OnMouseDown", function(teachesButton)
+		setBodyOffset(teachesButton, 1, -1)
+	end)
+	button:SetScript("OnMouseUp", function(teachesButton)
+		setBodyOffset(teachesButton, 0, 0)
+	end)
+	button:SetScript("OnClick", function()
+		self:GoToTrainerTeaches()
+	end)
+
+	return button
+end
+
+function ProfessionMenu:CreateTrainerTeachRow(parent)
+	local row = CreateFrame("Button", nil, parent, ns:GetBackdropTemplate())
+	row:SetSize(TRAINER_TEACH_ROW_WIDTH, TRAINER_TEACH_ROW_COLLAPSED_HEIGHT)
+	row:RegisterForClicks("LeftButtonUp")
+	if row.SetClipsChildren then
+		row:SetClipsChildren(true)
+	end
+	applyBackdrop(row, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, 0.90 }, { 0.22, 0.22, 0.23, 1 })
+
+	local highlight = createTint(row, GOLD[1], GOLD[2], GOLD[3], 0.20)
+
+	local stripe = row:CreateTexture(nil, "ARTWORK")
+	stripe:SetPoint("TOPLEFT", row, "TOPLEFT", 5, -5)
+	stripe:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 5, 5)
+	stripe:SetWidth(2)
+	colorTexture(stripe, GOLD[1], GOLD[2], GOLD[3], 0.80)
+
+	local iconFrame = CreateFrame("Frame", nil, row, ns:GetBackdropTemplate())
+	iconFrame:SetSize(TRAINER_TEACH_ICON_SIZE + 8, TRAINER_TEACH_ICON_SIZE + 8)
+	iconFrame:SetPoint("TOPLEFT", row, "TOPLEFT", 16, -6)
+	applyBackdrop(iconFrame, BUTTON_BACKDROP, { 0.010, 0.010, 0.012, 0.92 }, { 0.28, 0.26, 0.22, 1 })
+
+	local icon = iconFrame:CreateTexture(nil, "OVERLAY")
+	icon:SetSize(TRAINER_TEACH_ICON_SIZE, TRAINER_TEACH_ICON_SIZE)
+	icon:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)
+
+	local iconButton = CreateFrame("Button", nil, iconFrame)
+	iconButton:SetAllPoints(iconFrame)
+	iconButton:RegisterForClicks("LeftButtonUp")
+	iconButton:SetScript("OnEnter", function(button)
+		row.hovered = true
+		self:SetTrainerTeachRowState(row, row.index == self.selectedTrainerTeachIndex, true)
+		if button.itemID then
+			showItemTooltip(button)
+		end
+	end)
+	iconButton:SetScript("OnLeave", function(button)
+		hideItemTooltip()
+		row.hovered = row.IsMouseOver and row:IsMouseOver()
+		self:SetTrainerTeachRowState(row, row.index == self.selectedTrainerTeachIndex, row.hovered)
+	end)
+	iconButton:SetScript("OnClick", function()
+		self:SelectTrainerTeach(row.index)
+	end)
+
+	local name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	name:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 12, -1)
+	name:SetWidth(254)
+	name:SetJustifyH("LEFT")
+	setTextColor(name, GOLD)
+
+	local chevron = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	chevron:SetPoint("TOPRIGHT", row, "TOPRIGHT", -15, -14)
+	chevron:SetWidth(18)
+	chevron:SetJustifyH("CENTER")
+	chevron:SetText("+")
+	chevron:SetTextColor(0.56, 0.53, 0.46, 1)
+
+	local line1 = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	line1:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -5)
+	line1:SetWidth(366)
+	line1:SetJustifyH("LEFT")
+	setTextColor(line1, TEXT)
+
+	local divider = row:CreateTexture(nil, "ARTWORK")
+	divider:SetPoint("TOPLEFT", row, "TOPLEFT", 14, -52)
+	divider:SetPoint("TOPRIGHT", row, "TOPRIGHT", -14, -52)
+	divider:SetHeight(1)
+	colorTexture(divider, 0.28, 0.26, 0.22, 0.86)
+
+	local detail = CreateFrame("Frame", nil, row)
+	detail:SetPoint("TOPLEFT", row, "TOPLEFT", 92, -64)
+	detail:SetSize(340, 76)
+	detail:Hide()
+
+	local line2 = detail:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	line2:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, 0)
+	line2:SetWidth(366)
+	line2:SetJustifyH("LEFT")
+	setTextColor(line2, TEXT_DIM)
+
+	local createLabel = detail:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	createLabel:SetWidth(48)
+	createLabel:SetJustifyH("LEFT")
+	createLabel:SetText("Creates:")
+	setTextColor(createLabel, TEXT_DIM)
+	createLabel:Hide()
+
+	local createText = detail:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	createText:SetWidth(240)
+	createText:SetJustifyH("LEFT")
+	setTextColor(createText, TEXT_DIM)
+	createText:Hide()
+
+	local reagentLabel = detail:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	reagentLabel:SetWidth(62)
+	reagentLabel:SetJustifyH("LEFT")
+	reagentLabel:SetText("Reagents:")
+	setTextColor(reagentLabel, TEXT_DIM)
+	reagentLabel:Hide()
+
+	local reagentText = detail:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	reagentText:SetWidth(240)
+	reagentText:SetJustifyH("LEFT")
+	setTextColor(reagentText, TEXT_DIM)
+	reagentText:Hide()
+
+	local line3 = detail:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	line3:SetPoint("TOPLEFT", line2, "BOTTOMLEFT", 0, -2)
+	line3:SetWidth(366)
+	line3:SetJustifyH("LEFT")
+	setTextColor(line3, TEXT_DIM)
+
+	local line4 = detail:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	line4:SetPoint("TOPLEFT", line3, "BOTTOMLEFT", 0, -2)
+	line4:SetWidth(366)
+	line4:SetJustifyH("LEFT")
+	setTextColor(line4, TEXT_DIM)
+
+	row.highlight = highlight
+	row.stripe = stripe
+	row.iconButton = iconButton
+	row.icon = icon
+	row.name = name
+	row.chevron = chevron
+	row.line1 = line1
+	row.line2 = line2
+	row.line3 = line3
+	row.line4 = line4
+	row.divider = divider
+	row.detail = detail
+	row.createLabel = createLabel
+	row.createText = createText
+	row.createButton = nil
+	row.reagentLabel = reagentLabel
+	row.reagentText = reagentText
+	row.reagentButtons = {}
+	row.currentHeight = TRAINER_TEACH_ROW_COLLAPSED_HEIGHT
+	row.targetHeight = TRAINER_TEACH_ROW_COLLAPSED_HEIGHT
+	row:SetScript("OnEnter", function(teachRow)
+		teachRow.hovered = true
+		self:SetTrainerTeachRowState(teachRow, teachRow.index == self.selectedTrainerTeachIndex, true)
+	end)
+	row:SetScript("OnLeave", function(teachRow)
+		teachRow.hovered = false
+		self:SetTrainerTeachRowState(teachRow, teachRow.index == self.selectedTrainerTeachIndex, false)
+	end)
+	row:SetScript("OnClick", function(teachRow)
+		self:SelectTrainerTeach(teachRow.index)
+	end)
+
+	return row
+end
+
+function ProfessionMenu:CreateTrainerReagentButton(parent)
+	local button = CreateFrame("Button", nil, parent, ns:GetBackdropTemplate())
+	button:SetSize(TRAINER_REAGENT_ICON_SIZE, TRAINER_REAGENT_ICON_SIZE)
+	button:EnableMouse(true)
+	button:RegisterForClicks("LeftButtonUp")
+	applyBackdrop(button, BUTTON_BACKDROP, { 0.010, 0.010, 0.012, 0.92 }, { 0.30, 0.30, 0.31, 1 })
+
+	local icon = button:CreateTexture(nil, "OVERLAY")
+	icon:SetPoint("TOPLEFT", button, "TOPLEFT", 2, -2)
+	icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
+
+	local count = button:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+	count:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 0)
+	count:SetJustifyH("RIGHT")
+
+	button.icon = icon
+	button.count = count
+	button:SetScript("OnEnter", showItemTooltip)
+	button:SetScript("OnLeave", hideItemTooltip)
+	button:Hide()
+
+	return button
+end
+
+function ProfessionMenu:RefreshTrainerTeachReagents(row, teach)
+	local reagents = teach and teach.reagents
+	local hasReagents = reagents and #reagents > 0
+	local creates = teach and teach.creates
+	local hasCreates = creates and creates.itemID
+
+	row.line2:ClearAllPoints()
+	row.line3:ClearAllPoints()
+	row.line4:ClearAllPoints()
+	row.createLabel:ClearAllPoints()
+	row.createText:ClearAllPoints()
+	row.reagentLabel:ClearAllPoints()
+	row.reagentText:ClearAllPoints()
+
+	if row.createButton then
+		row.createButton:Hide()
+	end
+
+	if not hasReagents then
+		row.reagentLabel:Hide()
+		row.reagentText:Hide()
+		for _, button in ipairs(row.reagentButtons) do
+			button:Hide()
+		end
+	else
+		row.reagentLabel:Show()
+	end
+
+	if hasCreates then
+		if not row.createButton then
+			row.createButton = self:CreateTrainerReagentButton(row.detail)
+		end
+
+		row.line2:Hide()
+		row.line3:Hide()
+		row.line4:Hide()
+		row.createLabel:SetPoint("TOPLEFT", row.detail, "TOPLEFT", 0, 0)
+		row.createLabel:Show()
+		row.createButton.itemID = creates.itemID
+		row.createButton.reagentName = creates.name
+		row.createButton.icon:SetTexture(getItemIcon(creates.itemID))
+		row.createButton.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		row.createButton.count:SetText((creates.quantity and creates.quantity > 1) and tostring(creates.quantity) or "")
+		row.createButton:ClearAllPoints()
+		row.createButton:SetPoint("TOPLEFT", row.createLabel, "TOPRIGHT", 4, 1)
+		row.createButton:Show()
+		row.createText:SetText(formatTrainerTeachCreates(teach) or "")
+		row.createText:SetPoint("LEFT", row.createButton, "RIGHT", 6, 0)
+		row.createText:Show()
+		row.reagentLabel:SetPoint("TOPLEFT", row.createLabel, "BOTTOMLEFT", 0, -12)
+	else
+		row.createLabel:Hide()
+		row.createText:Hide()
+		row.line2:SetPoint("TOPLEFT", row.detail, "TOPLEFT", 0, 0)
+		row.line2:SetWidth(366)
+		row.line2:Show()
+		row.line3:SetPoint("TOPLEFT", row.line2, "BOTTOMLEFT", 0, -4)
+		if row.line3:GetText() and row.line3:GetText() ~= "" then
+			row.line3:Show()
+		else
+			row.line3:Hide()
+		end
+		row.line4:SetPoint("TOPLEFT", row.line3, "BOTTOMLEFT", 0, -4)
+		row.reagentLabel:SetPoint("TOPLEFT", row.line3, "BOTTOMLEFT", 0, -10)
+	end
+
+	if not hasReagents then
+		return
+	end
+
+	local anchor = row.reagentLabel
+	for index, reagent in ipairs(reagents) do
+		local button = row.reagentButtons[index]
+		if not button then
+			button = self:CreateTrainerReagentButton(row.detail)
+			row.reagentButtons[index] = button
+		end
+
+		button.itemID = reagent.itemID
+		button.reagentName = reagent.name
+		button.icon:SetTexture(getItemIcon(reagent.itemID))
+		button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		button.count:SetText((reagent.quantity and reagent.quantity > 1) and tostring(reagent.quantity) or "")
+		button:ClearAllPoints()
+		button:SetPoint("TOPLEFT", anchor, "TOPRIGHT", index == 1 and 4 or TRAINER_REAGENT_ICON_GAP, 1)
+		button:Show()
+		anchor = button
+	end
+
+	row.reagentText:SetText(formatTrainerTeachReagents(teach))
+	row.reagentText:SetPoint("LEFT", anchor, "RIGHT", 6, 0)
+	row.reagentText:Show()
+
+	for index = #reagents + 1, #row.reagentButtons do
+		row.reagentButtons[index]:Hide()
+	end
+
+	row.line3:SetPoint("TOPLEFT", row.reagentLabel, "BOTTOMLEFT", 0, -11)
+	row.line4:SetPoint("TOPLEFT", row.line3, "BOTTOMLEFT", 0, -4)
+end
+
 function ProfessionMenu:CreateTrainerDetailView()
 	local view = createView(self.stage, "TrainerDetailView")
 	self.views.trainerDetail = view
@@ -418,6 +882,10 @@ function ProfessionMenu:CreateTrainerDetailView()
 	role:SetWidth(210)
 	role:SetJustifyH("LEFT")
 	role:SetTextColor(0.74, 0.70, 0.60, 1)
+
+	local teachesButton = self:CreateTrainerTeachesButton(panel)
+	teachesButton:SetPoint("TOPLEFT", imageFrame, "BOTTOMLEFT", 0, -24)
+	teachesButton:Hide()
 
 	local locationLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	locationLabel:SetPoint("TOPLEFT", imageFrame, "BOTTOMLEFT", 0, -18)
@@ -538,6 +1006,7 @@ function ProfessionMenu:CreateTrainerDetailView()
 	self.trainerDetailImage = image
 	self.trainerDetailName = name
 	self.trainerDetailRole = role
+	self.trainerDetailTeachesButton = teachesButton
 	self.trainerDetailLocationLabel = locationLabel
 	self.trainerDetailLocation = location
 	self.trainerDetailModel = model
@@ -553,6 +1022,93 @@ function ProfessionMenu:CreateTrainerDetailView()
 	self.trainerImagePreviewOverlay = previewOverlay
 	self.trainerImagePreviewFrame = previewFrame
 	self.trainerImagePreviewImage = previewImage
+end
+
+function ProfessionMenu:CreateTrainerTeachesView()
+	local view = createView(self.stage, "TrainerTeachesView")
+	self.views.trainerTeaches = view
+
+	local title, subtitle = self:CreateHeader(view, "Teaches", "Trainer", function()
+		self:GoBackToTrainerDetail()
+	end)
+	self.trainerTeachesHeaderTitle = title
+	self.trainerTeachesHeaderSubtitle = subtitle
+
+	local panel = CreateFrame("Frame", nil, view, ns:GetBackdropTemplate())
+	panel:SetSize(TRAINER_TEACHES_PANEL_WIDTH, TRAINER_TEACHES_PANEL_HEIGHT)
+	panel:SetPoint("TOPLEFT", view, "TOPLEFT", SCREEN_PADDING_X, -78)
+	applyBackdrop(panel, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, 0.82 }, { 0.22, 0.22, 0.23, 1 })
+
+	local summary = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	summary:SetPoint("TOPLEFT", panel, "TOPLEFT", 18, -18)
+	summary:SetWidth(TRAINER_TEACH_ROW_WIDTH)
+	summary:SetJustifyH("LEFT")
+	setTextColor(summary, TEXT_DIM)
+
+	local scrollFrame = CreateFrame("ScrollFrame", nil, panel)
+	scrollFrame:SetSize(TRAINER_TEACH_ROW_WIDTH, TRAINER_TEACH_LIST_HEIGHT)
+	scrollFrame:SetPoint("TOPLEFT", panel, "TOPLEFT", 18, -56)
+	scrollFrame:EnableMouseWheel(true)
+	scrollFrame:SetScript("OnMouseWheel", function(frame, delta)
+		self:SetTrainerTeachScrollTarget((self.trainerTeachScrollTarget or frame:GetVerticalScroll() or 0) - (delta * TRAINER_SCROLL_STEP))
+	end)
+
+	local list = CreateFrame("Frame", nil, scrollFrame)
+	list:SetSize(TRAINER_TEACH_ROW_WIDTH, TRAINER_TEACH_LIST_HEIGHT)
+	scrollFrame:SetScrollChild(list)
+
+	local scrollTrack = CreateFrame("Frame", nil, panel)
+	scrollTrack:SetSize(TRAINER_SCROLL_TRACK_WIDTH, TRAINER_TEACH_LIST_HEIGHT)
+	scrollTrack:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 8, 0)
+	scrollTrack:EnableMouse(true)
+	scrollTrack:Hide()
+
+	local trackTexture = scrollTrack:CreateTexture(nil, "BACKGROUND")
+	trackTexture:SetAllPoints(scrollTrack)
+	colorTexture(trackTexture, 0.03, 0.03, 0.035, 0.74)
+
+	local scrollThumb = scrollTrack:CreateTexture(nil, "OVERLAY")
+	scrollThumb:SetWidth(TRAINER_SCROLL_TRACK_WIDTH)
+	scrollThumb:SetPoint("TOP", scrollTrack, "TOP", 0, 0)
+	colorTexture(scrollThumb, 0.88, 0.72, 0.24, 0.96)
+	scrollTrack:SetScript("OnMouseDown", function(track, button)
+		if button ~= "LeftButton" then
+			return
+		end
+
+		self:HandleTrainerTeachScrollTrackMouseDown(track)
+	end)
+	scrollTrack:SetScript("OnMouseUp", function()
+		self:StopTrainerTeachScrollDrag()
+	end)
+
+	local animator = CreateFrame("Frame", nil, view)
+	animator:Hide()
+
+	local scrollAnimator = CreateFrame("Frame", nil, view)
+	scrollAnimator:Hide()
+
+	local empty = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	empty:SetPoint("TOPLEFT", panel, "TOPLEFT", 18, -56)
+	empty:SetWidth(TRAINER_TEACH_ROW_WIDTH)
+	empty:SetJustifyH("LEFT")
+	empty:SetText("No trainer teachings recorded yet.")
+	setTextColor(empty, TEXT_DIM)
+	empty:Hide()
+
+	self.trainerTeachesPanel = panel
+	self.trainerTeachesSummary = summary
+	self.trainerTeachRows = {}
+	self.trainerTeachScrollFrame = scrollFrame
+	self.trainerTeachList = list
+	self.trainerTeachScrollTrack = scrollTrack
+	self.trainerTeachScrollThumb = scrollThumb
+	self.trainerTeachScrollAnimator = scrollAnimator
+	self.trainerTeachScrollTarget = 0
+	self.trainerTeachScrollMax = 0
+	self.trainerTeachDraggingScroll = false
+	self.trainerTeachAnimator = animator
+	self.trainerTeachesEmpty = empty
 end
 
 function ProfessionMenu:GoToTrainerMenu()
@@ -929,6 +1485,344 @@ function ProfessionMenu:SetTrainerButtonState(button, hovered)
 	colorTexture(button.stripe, accent[1], accent[2], accent[3], 0.84)
 end
 
+function ProfessionMenu:SetTrainerTeachRowState(row, selected, hovered)
+	local faction = self:GetTrainerFaction(self.selectedTrainerFactionID)
+	local accent = (faction and faction.accent) or GOLD
+	local borderColor = selected and { accent[1], accent[2], accent[3], 0.96 } or (hovered and BORDER_BRIGHT or { 0.22, 0.22, 0.23, 1 })
+
+	applyBackdrop(row, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, selected and 0.96 or 0.90 }, borderColor)
+	row.highlight:SetAlpha(selected and 0.42 or (hovered and 0.22 or 0))
+	row.chevron:SetText(selected and "-" or "+")
+	row.chevron:SetTextColor(selected and 0.95 or 0.56, selected and 0.83 or 0.53, selected and 0.44 or 0.46, 1)
+
+	if selected or hovered then
+		row.name:SetTextColor(1, 0.93, 0.66, 1)
+		row.line1:SetTextColor(0.96, 0.92, 0.82, 1)
+	else
+		setTextColor(row.name, GOLD)
+		setTextColor(row.line1, TEXT)
+	end
+end
+
+function ProfessionMenu:GetTrainerTeachRowTargetHeight(row)
+	if row and row.index == self.selectedTrainerTeachIndex then
+		return TRAINER_TEACH_ROW_EXPANDED_HEIGHT
+	end
+
+	return TRAINER_TEACH_ROW_COLLAPSED_HEIGHT
+end
+
+function ProfessionMenu:ApplyTrainerTeachLayout()
+	if not self.trainerTeachList then
+		return
+	end
+
+	local offset = 0
+	local visibleRows = 0
+	for _, row in ipairs(self.trainerTeachRows) do
+		if row:IsShown() then
+			local selected = row.index == self.selectedTrainerTeachIndex
+			local height = row.currentHeight or self:GetTrainerTeachRowTargetHeight(row)
+			local expandProgress = clamp((height - TRAINER_TEACH_ROW_COLLAPSED_HEIGHT) / (TRAINER_TEACH_ROW_EXPANDED_HEIGHT - TRAINER_TEACH_ROW_COLLAPSED_HEIGHT), 0, 1)
+
+			row:SetHeight(height)
+			row:ClearAllPoints()
+			row:SetPoint("TOPLEFT", self.trainerTeachList, "TOPLEFT", 0, -offset)
+			row.detail:SetAlpha(expandProgress)
+			row.divider:SetAlpha(expandProgress)
+			if expandProgress > 0.02 then
+				row.detail:Show()
+				row.divider:Show()
+			else
+				row.detail:Hide()
+				row.divider:Hide()
+			end
+
+			self:SetTrainerTeachRowState(row, selected, row.hovered)
+			offset = offset + height + TRAINER_TEACH_ROW_GAP
+			visibleRows = visibleRows + 1
+		end
+	end
+
+	if visibleRows > 0 then
+		offset = offset - TRAINER_TEACH_ROW_GAP
+	end
+	self.trainerTeachList:SetHeight(math.max(offset, 1))
+	self:RefreshTrainerTeachScrollBounds(offset)
+end
+
+function ProfessionMenu:RefreshTrainerTeachScrollBounds(contentHeight)
+	if not self.trainerTeachScrollFrame then
+		return
+	end
+
+	self.trainerTeachScrollMax = math.max((contentHeight or 0) - TRAINER_TEACH_LIST_HEIGHT, 0)
+	if self.trainerTeachScrollFrame.UpdateScrollChildRect then
+		self.trainerTeachScrollFrame:UpdateScrollChildRect()
+	end
+
+	if (self.trainerTeachScrollTarget or 0) > self.trainerTeachScrollMax then
+		self:SetTrainerTeachScrollTarget(self.trainerTeachScrollMax, true)
+		return
+	end
+
+	if self.trainerTeachScrollMax <= 0 then
+		self:SetTrainerTeachScrollTarget(0, true)
+		return
+	end
+
+	self:RefreshTrainerTeachScrollIndicator()
+end
+
+function ProfessionMenu:SetTrainerTeachScrollTarget(target, immediate)
+	if not self.trainerTeachScrollFrame then
+		return
+	end
+
+	self.trainerTeachScrollTarget = clamp(target or 0, 0, self.trainerTeachScrollMax or 0)
+	if immediate then
+		self.trainerTeachScrollFrame:SetVerticalScroll(self.trainerTeachScrollTarget)
+		self:RefreshTrainerTeachScrollIndicator()
+		return
+	end
+
+	self:StartTrainerTeachSmoothScroll()
+end
+
+function ProfessionMenu:StartTrainerTeachSmoothScroll()
+	if not self.trainerTeachScrollAnimator then
+		return
+	end
+
+	self.trainerTeachScrollAnimator:SetScript("OnUpdate", function(_, elapsed)
+		self:UpdateTrainerTeachSmoothScroll(elapsed)
+	end)
+	self.trainerTeachScrollAnimator:Show()
+end
+
+function ProfessionMenu:UpdateTrainerTeachSmoothScroll(elapsed)
+	if not self.trainerTeachScrollFrame then
+		return
+	end
+
+	local current = self.trainerTeachScrollFrame:GetVerticalScroll() or 0
+	local target = self.trainerTeachScrollTarget or 0
+	local progress = math.min(elapsed * TRAINER_SCROLL_SMOOTHING, 1)
+	local nextScroll = current + ((target - current) * progress)
+
+	if math.abs(target - nextScroll) < 0.5 then
+		nextScroll = target
+		if self.trainerTeachScrollAnimator then
+			self.trainerTeachScrollAnimator:SetScript("OnUpdate", nil)
+			self.trainerTeachScrollAnimator:Hide()
+		end
+	end
+
+	self.trainerTeachScrollFrame:SetVerticalScroll(nextScroll)
+	self:RefreshTrainerTeachScrollIndicator()
+end
+
+function ProfessionMenu:GetTrainerTeachScrollGeometry(track)
+	if not track then
+		return nil
+	end
+
+	local height = track:GetHeight() or TRAINER_TEACH_LIST_HEIGHT
+	if height <= 0 then
+		return nil
+	end
+
+	local maxScroll = self.trainerTeachScrollMax or 0
+	local thumbHeight = self.trainerTeachScrollThumb and (self.trainerTeachScrollThumb:GetHeight() or TRAINER_SCROLL_THUMB_MIN_HEIGHT) or TRAINER_SCROLL_THUMB_MIN_HEIGHT
+	local travel = math.max(height - thumbHeight, 1)
+	local current = self.trainerTeachScrollFrame and (self.trainerTeachScrollFrame:GetVerticalScroll() or 0) or 0
+	local thumbOffset = maxScroll > 0 and (current / maxScroll) * travel or 0
+
+	return height, thumbHeight, travel, thumbOffset
+end
+
+function ProfessionMenu:HandleTrainerTeachScrollTrackMouseDown(track)
+	if not track or (self.trainerTeachScrollMax or 0) <= 0 then
+		return
+	end
+
+	local cursorOffset = self:GetTrainerScrollCursorOffset(track)
+	local _, thumbHeight, _, thumbOffset = self:GetTrainerTeachScrollGeometry(track)
+	if not cursorOffset or not thumbHeight or not thumbOffset then
+		return
+	end
+
+	if cursorOffset >= thumbOffset and cursorOffset <= (thumbOffset + thumbHeight) then
+		self:StartTrainerTeachScrollDrag(track, cursorOffset - thumbOffset)
+		return
+	end
+
+	self:PageTrainerTeachScrollFromTrackClick(cursorOffset, thumbOffset, thumbHeight)
+end
+
+function ProfessionMenu:PageTrainerTeachScrollFromTrackClick(cursorOffset, thumbOffset, thumbHeight)
+	if not cursorOffset or not thumbOffset or not thumbHeight then
+		return
+	end
+
+	local current = (self.trainerTeachScrollFrame and (self.trainerTeachScrollFrame:GetVerticalScroll() or 0)) or self.trainerTeachScrollTarget or 0
+	local pageAmount = math.max(TRAINER_SCROLL_STEP, TRAINER_TEACH_LIST_HEIGHT - TRAINER_TEACH_ROW_COLLAPSED_HEIGHT)
+	if cursorOffset < thumbOffset then
+		self:SetTrainerTeachScrollTarget(current - pageAmount)
+	elseif cursorOffset > (thumbOffset + thumbHeight) then
+		self:SetTrainerTeachScrollTarget(current + pageAmount)
+	end
+end
+
+function ProfessionMenu:StartTrainerTeachScrollDrag(track, gripOffset)
+	if not track or (self.trainerTeachScrollMax or 0) <= 0 then
+		return
+	end
+
+	self.trainerTeachDraggingScroll = true
+	self.trainerTeachScrollDragGripOffset = gripOffset or (self.trainerTeachScrollThumb and ((self.trainerTeachScrollThumb:GetHeight() or TRAINER_SCROLL_THUMB_MIN_HEIGHT) / 2)) or (TRAINER_SCROLL_THUMB_MIN_HEIGHT / 2)
+	if self.trainerTeachScrollAnimator then
+		self.trainerTeachScrollAnimator:SetScript("OnUpdate", nil)
+		self.trainerTeachScrollAnimator:Hide()
+	end
+
+	track:SetScript("OnUpdate", function(activeTrack)
+		if IsMouseButtonDown and not IsMouseButtonDown("LeftButton") then
+			self:StopTrainerTeachScrollDrag()
+			return
+		end
+
+		self:UpdateTrainerTeachScrollFromCursor(activeTrack)
+	end)
+	self:UpdateTrainerTeachScrollFromCursor(track)
+end
+
+function ProfessionMenu:StopTrainerTeachScrollDrag()
+	self.trainerTeachDraggingScroll = false
+	self.trainerTeachScrollDragGripOffset = nil
+	if self.trainerTeachScrollTrack then
+		self.trainerTeachScrollTrack:SetScript("OnUpdate", nil)
+	end
+end
+
+function ProfessionMenu:UpdateTrainerTeachScrollFromCursor(track)
+	if not track or not self.trainerTeachScrollFrame then
+		return
+	end
+
+	local cursorOffset = self:GetTrainerScrollCursorOffset(track)
+	local _, thumbHeight, travel = self:GetTrainerTeachScrollGeometry(track)
+	if not cursorOffset or not thumbHeight or not travel then
+		return
+	end
+
+	local gripOffset = clamp(self.trainerTeachScrollDragGripOffset or (thumbHeight / 2), 0, thumbHeight)
+	local offset = clamp(cursorOffset - gripOffset, 0, travel)
+	local target = (offset / travel) * (self.trainerTeachScrollMax or 0)
+
+	self:SetTrainerTeachScrollTarget(target, true)
+end
+
+function ProfessionMenu:RefreshTrainerTeachScrollIndicator()
+	if not self.trainerTeachScrollTrack or not self.trainerTeachScrollThumb then
+		return
+	end
+
+	local maxScroll = self.trainerTeachScrollMax or 0
+	if maxScroll <= 0 then
+		self.trainerTeachScrollTrack:Hide()
+		return
+	end
+
+	local contentHeight = maxScroll + TRAINER_TEACH_LIST_HEIGHT
+	local thumbHeight = math.max(TRAINER_SCROLL_THUMB_MIN_HEIGHT, TRAINER_TEACH_LIST_HEIGHT * (TRAINER_TEACH_LIST_HEIGHT / contentHeight))
+	local current = self.trainerTeachScrollFrame and (self.trainerTeachScrollFrame:GetVerticalScroll() or 0) or 0
+	local travel = TRAINER_TEACH_LIST_HEIGHT - thumbHeight
+	local offset = maxScroll > 0 and (current / maxScroll) * travel or 0
+
+	self.trainerTeachScrollThumb:SetHeight(thumbHeight)
+	self.trainerTeachScrollThumb:ClearAllPoints()
+	self.trainerTeachScrollThumb:SetPoint("TOP", self.trainerTeachScrollTrack, "TOP", 0, -offset)
+	self.trainerTeachScrollTrack:Show()
+end
+
+function ProfessionMenu:RefreshTrainerTeachLayout(immediate)
+	if immediate then
+		if self.trainerTeachAnimator then
+			self.trainerTeachAnimator:SetScript("OnUpdate", nil)
+			self.trainerTeachAnimator:Hide()
+		end
+
+		for _, row in ipairs(self.trainerTeachRows) do
+			if row:IsShown() then
+				row.currentHeight = self:GetTrainerTeachRowTargetHeight(row)
+			end
+		end
+		self:ApplyTrainerTeachLayout()
+		return
+	end
+
+	self:StartTrainerTeachLayoutAnimation()
+end
+
+function ProfessionMenu:StartTrainerTeachLayoutAnimation()
+	if not self.trainerTeachAnimator then
+		self:RefreshTrainerTeachLayout(true)
+		return
+	end
+
+	for _, row in ipairs(self.trainerTeachRows) do
+		if row:IsShown() then
+			row.startHeight = row.currentHeight or row:GetHeight() or TRAINER_TEACH_ROW_COLLAPSED_HEIGHT
+			row.targetHeight = self:GetTrainerTeachRowTargetHeight(row)
+			if row.startHeight > TRAINER_TEACH_ROW_COLLAPSED_HEIGHT or row.targetHeight > TRAINER_TEACH_ROW_COLLAPSED_HEIGHT then
+				row.detail:Show()
+				row.divider:Show()
+			end
+		end
+	end
+
+	local elapsedTime = 0
+	self.trainerTeachAnimator:SetScript("OnUpdate", function(animator, elapsed)
+		elapsedTime = elapsedTime + elapsed
+		local progress = math.min(elapsedTime / TRAINER_TEACH_ANIMATION_DURATION, 1)
+		local eased = easeOutCubic(progress)
+
+		for _, row in ipairs(self.trainerTeachRows) do
+			if row:IsShown() then
+				local startHeight = row.startHeight or TRAINER_TEACH_ROW_COLLAPSED_HEIGHT
+				local targetHeight = row.targetHeight or self:GetTrainerTeachRowTargetHeight(row)
+				row.currentHeight = startHeight + ((targetHeight - startHeight) * eased)
+			end
+		end
+
+		self:ApplyTrainerTeachLayout()
+
+		if progress >= 1 then
+			animator:SetScript("OnUpdate", nil)
+			animator:Hide()
+			for _, row in ipairs(self.trainerTeachRows) do
+				if row:IsShown() then
+					row.currentHeight = row.targetHeight or self:GetTrainerTeachRowTargetHeight(row)
+					row.startHeight = nil
+					row.targetHeight = nil
+				end
+			end
+			self:ApplyTrainerTeachLayout()
+		end
+	end)
+	self.trainerTeachAnimator:Show()
+end
+
+function ProfessionMenu:SelectTrainerTeach(index)
+	if not index then
+		return
+	end
+
+	self.selectedTrainerTeachIndex = index == self.selectedTrainerTeachIndex and nil or index
+	self:RefreshTrainerTeachLayout(false)
+end
+
 function ProfessionMenu:GoToTrainerDetail(trainer)
 	if not trainer then
 		return
@@ -938,6 +1832,98 @@ function ProfessionMenu:GoToTrainerDetail(trainer)
 	self:RefreshTrainerDetail()
 	self:ResizeWindow(self:GetTrainerDetailWindowName(trainer))
 	self:TransitionTo(self.views.trainerDetail, 1, self:GetTrainerDetailWindowName(trainer))
+end
+
+function ProfessionMenu:GoToTrainerTeaches()
+	if not hasTrainerTeaches(self.selectedTrainer) then
+		return
+	end
+
+	self:CloseTrainerImagePreview(true)
+	self:RefreshTrainerTeaches()
+	self:ResizeWindow("trainerTeaches")
+	self:TransitionTo(self.views.trainerTeaches, 1, "trainerTeaches")
+end
+
+function ProfessionMenu:GoBackToTrainerDetail()
+	if not self.selectedTrainer then
+		self:GoBackToTrainerList()
+		return
+	end
+
+	local targetName = self:GetTrainerDetailWindowName(self.selectedTrainer)
+	self:RefreshTrainerDetail()
+	self:ResizeWindow(targetName)
+	self:TransitionTo(self.views.trainerDetail, -1, targetName)
+end
+
+function ProfessionMenu:RefreshTrainerTeaches()
+	local trainer = self.selectedTrainer
+	local teaches = (trainer and trainer.teaches) or {}
+	local faction = self:GetTrainerFaction(self.selectedTrainerFactionID)
+	local accent = (faction and faction.accent) or GOLD
+
+	self.trainerTeachesHeaderTitle:SetText(trainer and trainer.name or "Teaches")
+	self.trainerTeachesHeaderSubtitle:SetText("What this trainer teaches")
+	self.trainerTeachesSummary:SetText(tostring(#teaches) .. " entries")
+	local trainerChanged = self.selectedTrainerTeachTrainer ~= trainer
+	if trainerChanged then
+		self.selectedTrainerTeachTrainer = trainer
+		self.selectedTrainerTeachIndex = #teaches > 0 and 1 or nil
+	elseif self.selectedTrainerTeachIndex and self.selectedTrainerTeachIndex > #teaches then
+		self.selectedTrainerTeachIndex = nil
+	end
+
+	if #teaches == 0 then
+		self.trainerTeachesEmpty:Show()
+	else
+		self.trainerTeachesEmpty:Hide()
+	end
+
+	for index, teach in ipairs(teaches) do
+		local row = self.trainerTeachRows[index]
+		if not row then
+			row = self:CreateTrainerTeachRow(self.trainerTeachList)
+			self.trainerTeachRows[index] = row
+		end
+
+		local line1, line2, line3, line4 = getTrainerTeachLines(teach)
+		row.index = index
+		row.teach = teach
+		row:ClearAllPoints()
+		colorTexture(row.stripe, accent[1], accent[2], accent[3], 0.84)
+		setIcon(row.icon, getTrainerTeachIcon(teach))
+		if teach.creates and teach.creates.itemID then
+			row.iconButton.itemID = teach.creates.itemID
+			row.iconButton.reagentName = teach.creates.name
+		else
+			row.iconButton.itemID = nil
+			row.iconButton.reagentName = nil
+		end
+		row.name:SetText(getTrainerTeachName(teach))
+		row.line1:SetText(line1 or "")
+		row.line2:SetText(line2 or "")
+		row.line3:SetText(line3 or "")
+		row.line4:SetText(line4 or "")
+		self:RefreshTrainerTeachReagents(row, teach)
+		if line4 and line4 ~= "" then
+			row.line4:Show()
+		else
+			row.line4:Hide()
+		end
+		row:Show()
+	end
+
+	for index = #teaches + 1, #self.trainerTeachRows do
+		self.trainerTeachRows[index].index = nil
+		self.trainerTeachRows[index].teach = nil
+		self.trainerTeachRows[index]:Hide()
+	end
+
+	self:RefreshTrainerTeachLayout(true)
+	if trainerChanged then
+		self:SetTrainerTeachScrollTarget(0, true)
+	end
 end
 
 function ProfessionMenu:GoBackToTrainerList()
@@ -1048,6 +2034,7 @@ function ProfessionMenu:RefreshTrainerDetail()
 	end
 
 	local hasMedia = trainer.modelImage or trainer.mapImage
+	local hasTeaches = hasTrainerTeaches(trainer)
 
 	self.trainerDetailHeaderTitle:SetText(trainer.name)
 	self.trainerDetailHeaderSubtitle:SetText(trainer.title or "Trainer")
@@ -1056,6 +2043,14 @@ function ProfessionMenu:RefreshTrainerDetail()
 	self.trainerDetailRole:SetText(trainer.title or "Trainer")
 	self.trainerDetailLocation:SetText(getTrainerLocationText(trainer, true))
 	self.trainerDetailNpcID:SetText("NPC ID: " .. tostring(trainer.npcID or ""))
+
+	if self.trainerDetailTeachesButton then
+		if hasTeaches then
+			self.trainerDetailTeachesButton:Show()
+		else
+			self.trainerDetailTeachesButton:Hide()
+		end
+	end
 
 	if hasMedia then
 		self.trainerDetailPanel:SetSize(TRAINER_DETAIL_PANEL_WIDTH, TRAINER_DETAIL_MEDIA_PANEL_HEIGHT)
@@ -1071,7 +2066,7 @@ function ProfessionMenu:RefreshTrainerDetail()
 	else
 		self.trainerDetailPanel:SetSize(TRAINER_DETAIL_PANEL_WIDTH, TRAINER_DETAIL_PANEL_HEIGHT)
 		self.trainerDetailLocationLabel:ClearAllPoints()
-		self.trainerDetailLocationLabel:SetPoint("TOPLEFT", self.trainerDetailImageFrame, "BOTTOMLEFT", 0, -18)
+		self.trainerDetailLocationLabel:SetPoint("TOPLEFT", self.trainerDetailImageFrame, "BOTTOMLEFT", 0, hasTeaches and -56 or -18)
 		self.trainerDetailLocation:SetWidth(318)
 		self.trainerDetailLocation:ClearAllPoints()
 		self.trainerDetailLocation:SetPoint("TOPLEFT", self.trainerDetailLocationLabel, "BOTTOMLEFT", 0, -5)
@@ -1119,6 +2114,7 @@ end
 ProfessionMenu:RegisterCategoryInitializer(function(menu)
 	menu:CreateTrainerMenuView()
 	menu:CreateTrainerDetailView()
+	menu:CreateTrainerTeachesView()
 end)
 
 ProfessionMenu:RegisterSectionHandler("trainers", function(menu)
