@@ -8,6 +8,7 @@ local DEFAULT_WIDTH = 500
 local DEFAULT_HEIGHT = 175
 local RESIZE_DURATION = 0.24
 local BORDER_COLOR = { 0.62, 0.62, 0.62, 1 }
+local BACKGROUND_SHADE_COLOR = { 0.005, 0.005, 0.006, 0.52 }
 
 local FRAME_BACKDROP = {
 	bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
@@ -110,6 +111,18 @@ function Window:Create()
 	frame.ownerFrame = frame
 
 	applyBackdrop(frame, FRAME_BACKDROP, { 0.02, 0.02, 0.02, 0.96 }, BORDER_COLOR)
+
+	local backgroundShade = frame:CreateTexture(nil, "BACKGROUND")
+	if backgroundShade.SetDrawLayer then
+		backgroundShade:SetDrawLayer("BACKGROUND", 1)
+	end
+	backgroundShade:SetPoint("TOPLEFT", frame, "TOPLEFT", 5, -5)
+	backgroundShade:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -5, 5)
+	if backgroundShade.SetColorTexture then
+		backgroundShade:SetColorTexture(BACKGROUND_SHADE_COLOR[1], BACKGROUND_SHADE_COLOR[2], BACKGROUND_SHADE_COLOR[3], BACKGROUND_SHADE_COLOR[4])
+	else
+		backgroundShade:SetTexture(BACKGROUND_SHADE_COLOR[1], BACKGROUND_SHADE_COLOR[2], BACKGROUND_SHADE_COLOR[3], BACKGROUND_SHADE_COLOR[4])
+	end
 
 	local titleBar = CreateFrame("Frame", "$parentTitleBar", frame)
 	titleBar:SetSize(230, 60)

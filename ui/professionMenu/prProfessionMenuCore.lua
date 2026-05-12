@@ -284,11 +284,9 @@ function ProfessionMenu:CreateProfessionDetailView()
 	local view = createView(self.stage, "ProfessionDetailView")
 	self.views.detail = view
 
-	local title, subtitle = self:CreateHeader(view, "Profession", "Choose a section", function()
+	self:CreateBackButton(view, function()
 		self:GoToProfessions(true)
-	end)
-	self.detailHeaderTitle = title
-	self.detailHeaderSubtitle = subtitle
+	end):SetPoint("TOPLEFT", view, "TOPLEFT", SCREEN_PADDING_X, HEADER_Y + 4)
 
 	local hero = CreateFrame("Frame", nil, view)
 	hero:SetSize(482, 78)
@@ -568,8 +566,6 @@ function ProfessionMenu:RefreshDetail()
 	setIcon(self.detailIcon, getSpellTexture(profession.spellID, profession.icon))
 	self.detailName:SetText(profession.name)
 	self.detailGroup:SetText(profession.group)
-	self.detailHeaderTitle:SetText(profession.name)
-	self.detailHeaderSubtitle:SetText("Choose a section")
 	colorTexture(self.detailHeroGlow, profession.accent[1], profession.accent[2], profession.accent[3], 0.10)
 	self:RefreshActions()
 end
