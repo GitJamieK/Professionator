@@ -12,6 +12,7 @@ local GRID_Y = Shared.GRID_Y
 local PROFESSION_ROW_WIDTH = Shared.PROFESSION_ROW_WIDTH
 local PROFESSION_ROW_HEIGHT = Shared.PROFESSION_ROW_HEIGHT
 local PROFESSION_ROW_GAP = Shared.PROFESSION_ROW_GAP
+local PROFESSION_GROUP_GAP = Shared.PROFESSION_GROUP_GAP
 local ACTION_WIDTH = Shared.ACTION_WIDTH
 local ACTION_HEIGHT = Shared.ACTION_HEIGHT
 local ACTION_GAP = Shared.ACTION_GAP
@@ -35,6 +36,15 @@ local setBodyOffset = Shared.SetBodyOffset
 local createTint = Shared.CreateTint
 local createView = Shared.CreateView
 local placeView = Shared.PlaceView
+
+local MAIN_PROFESSION_GROUPS = {
+	Crafting = true,
+	Gathering = true,
+}
+
+local function isMainProfession(profession)
+	return profession and MAIN_PROFESSION_GROUPS[profession.group] == true
+end
 
 ProfessionMenu.categoryInitializers = {}
 ProfessionMenu.sectionHandlers = {}
@@ -208,12 +218,35 @@ function ProfessionMenu:CreateProfessionListView()
 	grid:SetSize(496, 310)
 	grid:SetPoint("TOPLEFT", view, "TOPLEFT", SCREEN_PADDING_X, GRID_Y)
 
-	for index, profession in ipairs(self.professions) do
+	local mainList, secondaryList = {}, {}
+	for _, profession in ipairs(self.professions) do
+		if isMainProfession(profession) then
+			table.insert(mainList, profession)
+		else
+			table.insert(secondaryList, profession)
+		end
+	end
+
+	local mainRowCount = math.ceil(#mainList / 2)
+	local secondaryYOffset = mainRowCount * (PROFESSION_ROW_HEIGHT + PROFESSION_ROW_GAP) + PROFESSION_GROUP_GAP
+
+	local function placeRow(list, index, baseYOffset)
+		local profession = list[index]
 		local column = (index - 1) % 2
 		local row = math.floor((index - 1) / 2)
 		local button = self:CreateProfessionRow(grid, profession)
-		button:SetPoint("TOPLEFT", grid, "TOPLEFT", column * (PROFESSION_ROW_WIDTH + PROFESSION_ROW_GAP), -(row * (PROFESSION_ROW_HEIGHT + PROFESSION_ROW_GAP)))
+		local x = column * (PROFESSION_ROW_WIDTH + PROFESSION_ROW_GAP)
+		local y = baseYOffset + row * (PROFESSION_ROW_HEIGHT + PROFESSION_ROW_GAP)
+		button:SetPoint("TOPLEFT", grid, "TOPLEFT", x, -y)
 		table.insert(self.professionButtons, button)
+	end
+
+	for index = 1, #mainList do
+		placeRow(mainList, index, 0)
+	end
+
+	for index = 1, #secondaryList do
+		placeRow(secondaryList, index, secondaryYOffset)
 	end
 end
 
