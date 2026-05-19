@@ -17,6 +17,7 @@ desktop.ini
 .agents/
 .claude
 .claude/
+CLAUDE.md
 .gemini
 .gemini/
 .aider*
