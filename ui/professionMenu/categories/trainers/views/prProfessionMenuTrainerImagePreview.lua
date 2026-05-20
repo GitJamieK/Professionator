@@ -189,6 +189,7 @@ function ProfessionMenu:RefreshTrainerDetail()
 		self.trainerDetailMapHint:Hide()
 		self.trainerDetailMapButton:Show()
 		self.trainerDetailWaypointButton:Show()
+		self:SetWaypointButtonState(ns.Waypoint:IsActiveFor(trainer), self.trainerDetailWaypointButton.hovered)
 	else
 		self.trainerDetailMapHint:Hide()
 		self.trainerDetailMapFrame:Hide()

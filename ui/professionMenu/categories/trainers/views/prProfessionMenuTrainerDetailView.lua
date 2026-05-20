@@ -77,6 +77,22 @@ function ProfessionMenu:CreateTrainerDetailView()
 	waypointLabel:SetPoint("CENTER", waypointButton, "CENTER", 0, 0)
 	waypointLabel:SetText("waypoint")
 	setTextColor(waypointLabel, TEXT_DIM)
+	waypointButton.label = waypointLabel
+
+	waypointButton:SetScript("OnClick", function()
+		if not self.selectedTrainer then
+			return
+		end
+		ns.Waypoint:Toggle(self.selectedTrainer, self.selectedProfession and self.selectedProfession.id, self.selectedTrainerFactionID)
+	end)
+	waypointButton:SetScript("OnEnter", function(button)
+		button.hovered = true
+		self:SetWaypointButtonState(ns.Waypoint:IsActiveFor(self.selectedTrainer), true)
+	end)
+	waypointButton:SetScript("OnLeave", function(button)
+		button.hovered = false
+		self:SetWaypointButtonState(ns.Waypoint:IsActiveFor(self.selectedTrainer), false)
+	end)
 
 	local location = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	location:SetPoint("TOPLEFT", locationLabel, "BOTTOMLEFT", 0, -5)

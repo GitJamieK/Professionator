@@ -10,11 +10,13 @@
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\HereBeDragons\HereBeDragons-2.0.lua
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 core\prCore.lua
 data\professions\prProfessionData.lua
+data\zones\prZoneMapIDs.lua
 ui\professionMenu\categories\trainers\data\prProfessionTrainerData.lua
 ui\professionMenu\categories\trainers\data\firstAid\teaches\prFirstAidTrainerTeaches.lua
 ui\professionMenu\categories\trainers\data\firstAid\teaches\prFirstAidTraumaSurgeonTeaches.lua
@@ -51,5 +53,6 @@ ui\professionMenu\categories\trainers\navigation\prProfessionMenuTrainerTeaches.
 ui\professionMenu\categories\trainers\views\prProfessionMenuTrainerImagePreview.lua
 ui\professionMenu\categories\trainers\prProfessionMenuTrainers.lua
 ui\prMinimap.lua
+ui\waypoint\prWaypointArrow.lua
 core\prSlashCommands.lua
 core\prEvents.lua

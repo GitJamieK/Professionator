@@ -38,6 +38,36 @@ function ProfessionMenu:SetTrainerButtonState(button, hovered)
 	colorTexture(button.stripe, accent[1], accent[2], accent[3], 0.84)
 end
 
+function ProfessionMenu:SetWaypointButtonState(active, hovered)
+	local button = self.trainerDetailWaypointButton
+	if not button then
+		return
+	end
+
+	local faction = self:GetTrainerFaction(self.selectedTrainerFactionID)
+	local accent = (faction and faction.accent) or GOLD
+
+	if active then
+		applyBackdrop(button, BUTTON_BACKDROP, { accent[1] * 0.22, accent[2] * 0.22, accent[3] * 0.22, 0.95 }, { accent[1], accent[2], accent[3], 1 })
+		if button.label then
+			button.label:SetTextColor(1, 0.93, 0.66, 1)
+		end
+	else
+		local borderColor = hovered and BORDER_BRIGHT or { 0.30, 0.30, 0.31, 1 }
+		applyBackdrop(button, BUTTON_BACKDROP, { 0.018, 0.018, 0.020, hovered and 0.96 or 0.90 }, borderColor)
+		if button.label then
+			setTextColor(button.label, hovered and TEXT or TEXT_DIM)
+		end
+	end
+end
+
+function ProfessionMenu:RefreshWaypointButton()
+	local button = self.trainerDetailWaypointButton
+	if button and button:IsShown() then
+		self:SetWaypointButtonState(ns.Waypoint:IsActiveFor(self.selectedTrainer), button.hovered)
+	end
+end
+
 function ProfessionMenu:SetTrainerTeachRowState(row, selected, hovered)
 	local faction = self:GetTrainerFaction(self.selectedTrainerFactionID)
 	local accent = (faction and faction.accent) or GOLD

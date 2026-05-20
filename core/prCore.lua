@@ -23,6 +23,12 @@ ns.defaults = {
 			x = 0,
 			y = 0,
 		},
+		waypoint = {
+			point = "CENTER",
+			relativePoint = "CENTER",
+			x = 320,
+			y = -140,
+		},
 	},
 }
 
